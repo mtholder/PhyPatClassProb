@@ -1,0 +1,94 @@
+#NEXUS
+begin taxa;
+	dimensions ntax = 4;
+	taxlabels one two three four;
+end;
+begin characters;
+	dimensions nchar = 256;
+	format datatype = dna interleave;
+	matrix 
+		one 	AAAA AAAA AAAA AAAA 
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	CCCC CCCC CCCC CCCC 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	GGGG GGGG GGGG GGGG
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	TTTT TTTT TTTT TTTT 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+		four 	ACGT ACGT ACGT ACGT;
+end;
+
+begin trees;
+	
+	tree mine = [&U] ( 1 : 0.1 , ( 2 : 0.1 ,	3 : 0.1 ) : 0.1 , 4 : 0.1 );
+end;
