@@ -204,7 +204,7 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 		}
 	}
 	
-	for (unsigned currScore = 1; currScore <=maxParsScore ++currScore) {
+	for (unsigned currScore = 1; currScore <=maxParsScore; ++currScore) {
 		
 	}
 }
