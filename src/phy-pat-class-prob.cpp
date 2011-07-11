@@ -161,6 +161,7 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 		for (unsigned r = 0; r < blob.nRates; ++r)
 			pVec[blob.nStates*r + stateIndex] = 1.0;
 	}
+	this->nLeavesBelow = 1;
 }
 
 void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen, 
@@ -177,8 +178,8 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 	unsigned rightMaxP = rightPI.getMaxParsScore();
 	unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
 	this->byParsScore.clear();
-	this->byParsScore.resize(maxParsScore);
-
+	this->byParsScore.resize(maxParsScore + 1);
+	this->nLeavesBelow = leftPI.getNLeavesBelow() + rightPI.getNLeavesBelow();
 	// do the calculations for staying in the constant patterns, these are more simple than the general calcs...
 	if (true) { //@TEMP if true so that variables are scoped.
 		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
@@ -201,6 +202,10 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 			
 			addToAncProbVec(pVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 		}
+	}
+	
+	for (unsigned currScore = 1; currScore <=maxParsScore ++currScore) {
+		
 	}
 }
 

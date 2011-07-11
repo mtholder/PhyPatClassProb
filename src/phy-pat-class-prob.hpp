@@ -106,7 +106,11 @@ class ProbInfo {
 		const ProbForParsScore & getByParsScore(unsigned score) const {
 		    return this->byParsScore.at(score);
 		}
+		unsigned getNLeavesBelow() const {
+		    return nLeavesBelow;
+		}
 	protected:
+		unsigned nLeavesBelow;
 	
         void addToAncProbVec(std::vector<double> & pVec, 
             const double *** leftPMatVec, const std::vector<double> * leftProbs,
