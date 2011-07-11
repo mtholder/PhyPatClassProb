@@ -1,115 +1,15 @@
-#include <iostream>
-#include <cassert>
-#include <cmath>
-#include <vector>
+#include "phy-pat-class-prob.hpp"
 #include "ncl/nxsmultiformat.h"
-
-////////////////////////////////////////////////////////////////////////////////
-// header
-////////////////////////////////////////////////////////////////////////////////
-
-typedef unsigned char BitField;
-const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
-typedef std::vector<BitField> BitFieldRow;
-typedef std::vector<BitFieldRow> BitFieldMatrix;
+#include "ncl/nxsallocatematrix.h"
 
 
 
-/// \throws NxsException for gaps or ambiguous cells
-/// \returns a string of the symbols for each state (length == nStates).
-std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatrix & mat, const NxsUnsignedSet * toInclude=0L);
-void writeBitFieldMatrix(std::ostream & out, const BitFieldMatrix & bitFieldMatrix);
-
-class PatternSummary;
-void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out );
-void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &, std::ostream & out, PatternSummary *);
-
+void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo);
 void initializeGlobals(const std::string & symbols);
 
-////////////////////////////////////////////////////////////////////////////////
-// cpp
-////////////////////////////////////////////////////////////////////////////////
-std::vector<unsigned> gZeroVec;
 
-
-class ParsInfo {
-	public:
-		ParsInfo()
-			:downPass(0),
-			allSeen(0),
-			score(0),
-			numPatterns(0) {
-			}
-		unsigned size() const {
-			return numPatterns;
-		}
-		void calculateForTip(const BitFieldRow & data) {
-			assert(gZeroVec.size() >= data.size());
-			this->numPatterns = data.size();
-			this->downPass = &data[0];
-			this->allSeen = &data[0];
-			this->score = &gZeroVec[0];
-		}
-		void calculateForInternal(const ParsInfo & leftData, const ParsInfo & rightData) {
-			this->numPatterns = leftData.size();
-			assert(numPatterns == rightData.size());
-			this->downPassOwned.resize(numPatterns);
-			this->downPass = &this->downPassOwned[0];
-			this->allSeenOwned.resize(numPatterns);
-			this->allSeen = &this->allSeenOwned[0];
-			this->scoreOwned.resize(numPatterns);
-			this->score = &this->scoreOwned[0];
-			const BitField * leftDown = leftData.downPass; 
-			const BitField * leftAll = leftData.allSeen; 
-			const unsigned * leftScore = leftData.score; 
-			const BitField * rightDown = rightData.downPass; 
-			const BitField * rightAll = rightData.allSeen; 
-			const unsigned * rightScore = rightData.score; 
-			for (unsigned i = 0; i < numPatterns; ++i, ++leftDown, ++leftAll, ++leftScore, ++rightDown, ++rightAll, ++rightScore) {
-				const BitField lrIntersection = (*leftDown) & (*rightDown);
-				const unsigned accumulScore = *leftScore + *rightScore;
-				this->allSeenOwned[i] = (*leftAll) | (*rightAll);
-				if (lrIntersection == BitField(0)) {
-					const BitField lrUnion = (*leftDown) | (*rightDown);
-					this->downPassOwned[i] = lrUnion;
-					this->scoreOwned[i] = 1 + accumulScore;
-				}
-				else {
-					this->downPassOwned[i] = lrIntersection;
-					this->scoreOwned[i] = accumulScore;
-				}
-			}
-		}
-
-		void write(std::ostream & o) const {
-			unsigned totalScore = 0;
-			for (unsigned i = 0; i < numPatterns; ++i) {
-				o << "pattern = " << i << " score = " << (int)score[i] << " downpass = " << (int)downPass[i] << " states = " << (int)allSeen[i] << '\n';
-				totalScore += score[i];
-			}
-			o << "totalScore = " << totalScore << '\n';
-		}
-		const BitField * downPass; // alias
-		const BitField * allSeen; // alias
-		const unsigned * score; // alias
-		
-	private:
-		unsigned numPatterns;
-		BitFieldRow downPassOwned;
-		BitFieldRow allSeenOwned;
-		std::vector<unsigned> scoreOwned;
-		
-};
-
-
-typedef double ** TiMat;
-typedef void (* TiMatFunc)(double, double *);
-
-void JCTiMat(double edgeLen, double * pMat);
-
-
-
-typedef std::map<BitField, unsigned> BitsToCount;
+// Globals (all should start with g[A-Z] pattern to make it easier to find and replace them later).
+const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
 std::map<BitField, std::string> gStateCodesToSymbols;
 std::string gAlphabet;
 std::vector<BitField> gSingleStateCodes;
@@ -119,28 +19,12 @@ std::vector<BitField> gSingleStateCodes;
 std::vector<BitField> gStateIndexToStateCode; 
 std::vector<BitField> gMultiStateCodes;
 BitsToCount gStateCodeToNumStates;
-typedef std::vector<double> DoubleMat;
-DoubleMat gFirstMatVec;
-double * gFirstMat;
-DoubleMat gSecondMatVec;
-double * gSecondMat;
-	
-class ProbInfo {
-	public:
-		void calculate(ProbInfo * leftPI, double leftEdgeLen, 
-					   ProbInfo * rightPI, double rightEdgeLen,
-					   TiMatFunc fn) {
-			fn(leftEdgeLen, gFirstMat);
-			fn(rightEdgeLen, gSecondMat);
-		}
-	protected:
-};
-
+ScopedDblTwoDMatrix gFirstMatVec;
+double ** gFirstMat;
+ScopedDblTwoDMatrix gSecondMatVec;
+double ** gSecondMat;
 ProbInfo gTipProbInfo;
-
-typedef std::pair<const NxsSimpleNode *, unsigned> NodeID;
-typedef std::map<NodeID, ParsInfo> NodeIDToParsInfo;
-typedef std::map<NodeID, ProbInfo *> NodeIDToProbInfo;
+std::vector<unsigned> gZeroVec;
 
 
 std::set<BitField> toElements(BitField sc) {
@@ -154,6 +38,22 @@ std::set<BitField> toElements(BitField sc) {
 	return ret;
 }
 
+void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo) {
+
+	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
+			ndIt != preorderVec.rend();
+			++ndIt) {
+		const NxsSimpleNode * nd = *ndIt;
+		std::vector<NxsSimpleNode *> children = nd->GetChildren();
+		const unsigned numChildren = children.size();
+		NodeID currNdId(nd, 0);
+		if (numChildren > 0) {
+			delete nodeIDToProbInfo[currNdId];
+		}
+	}
+}
+
+
 void initializeGlobals(const std::string & symbols) {
 	gAlphabet = symbols;
 	gSingleStateCodes.clear();
@@ -162,12 +62,12 @@ void initializeGlobals(const std::string & symbols) {
 	gStateCodeToNumStates.clear();
 	
 	const unsigned nStates = gAlphabet.length();
-	gFirstMatVec.clear();
-	gFirstMatVec.assign(nStates*nStates, 0.0);
-	gFirstMat = &(gFirstMatVec[0]);
-	gSecondMatVec.clear();
-	gSecondMatVec.assign(nStates*nStates, 0.0);
-	gSecondMat = &(gSecondMatVec[0]);
+	gFirstMatVec.Free();
+	gFirstMatVec.Initialize(nStates, nStates);
+	gFirstMat = gFirstMatVec.GetAlias();
+	gSecondMatVec.Free();
+	gSecondMatVec.Initialize(nStates, nStates);
+	gSecondMat = gSecondMatVec.GetAlias();
 	
 	unsigned lbfU = (1 << nStates) - 1;
 	const BitField lastBF = BitField(lbfU);
@@ -193,91 +93,117 @@ void initializeGlobals(const std::string & symbols) {
 		if (sc == lastBF)
 			break;
 	}
-	
-	
 }
 
-void JCTiMat(double edgeLength, double * pMat) {
+
+void ParsInfo::calculateForTip(const BitFieldRow & data) {
+	assert(gZeroVec.size() >= data.size());
+	this->numPatterns = data.size();
+	this->downPass = &data[0];
+	this->allSeen = &data[0];
+	this->score = &gZeroVec[0];
+}
+void ParsInfo::calculateForInternal(const ParsInfo & leftData, const ParsInfo & rightData) {
+	this->numPatterns = leftData.size();
+	assert(numPatterns == rightData.size());
+	this->downPassOwned.resize(numPatterns);
+	this->downPass = &this->downPassOwned[0];
+	this->allSeenOwned.resize(numPatterns);
+	this->allSeen = &this->allSeenOwned[0];
+	this->scoreOwned.resize(numPatterns);
+	this->score = &this->scoreOwned[0];
+	const BitField * leftDown = leftData.downPass; 
+	const BitField * leftAll = leftData.allSeen; 
+	const unsigned * leftScore = leftData.score; 
+	const BitField * rightDown = rightData.downPass; 
+	const BitField * rightAll = rightData.allSeen; 
+	const unsigned * rightScore = rightData.score; 
+	for (unsigned i = 0; i < numPatterns; ++i, ++leftDown, ++leftAll, ++leftScore, ++rightDown, ++rightAll, ++rightScore) {
+		const BitField lrIntersection = (*leftDown) & (*rightDown);
+		const unsigned accumulScore = *leftScore + *rightScore;
+		this->allSeenOwned[i] = (*leftAll) | (*rightAll);
+		if (lrIntersection == BitField(0)) {
+			const BitField lrUnion = (*leftDown) | (*rightDown);
+			this->downPassOwned[i] = lrUnion;
+			this->scoreOwned[i] = 1 + accumulScore;
+		}
+		else {
+			this->downPassOwned[i] = lrIntersection;
+			this->scoreOwned[i] = accumulScore;
+		}
+	}
+}
+
+void ParsInfo::write(std::ostream & o) const {
+	unsigned totalScore = 0;
+	for (unsigned i = 0; i < numPatterns; ++i) {
+		o << "pattern = " << i << " score = " << (int)score[i] << " downpass = " << (int)downPass[i] << " states = " << (int)allSeen[i] << '\n';
+		totalScore += score[i];
+	}
+	o << "totalScore = " << totalScore << '\n';
+}
+
+void ProbInfo::calculate(ProbInfo * leftPI, double leftEdgeLen, 
+					   ProbInfo * rightPI, double rightEdgeLen,
+					   TiMatFunc fn) {
+	fn(leftEdgeLen, gFirstMat);
+	fn(rightEdgeLen, gSecondMat);
+}
+
+
+void JCTiMat(double edgeLength, TiMat pMat) {
 	assert(gAlphabet.length() == 4);
 	const double exp_term = exp(-(4.0/3.0)*edgeLength);
 	const double prob_change = 0.25 - 0.25*exp_term;
 	const double prob_nochange = 0.25 + 0.75*exp_term;
 	assert(prob_change >= 0.0);
-	pMat[0*4 + 0] = prob_nochange;
-	pMat[0*4 + 1] = prob_change;
-	pMat[0*4 + 2] = prob_change;
-	pMat[0*4 + 3] = prob_change;
-	pMat[1*4 + 0] = prob_change;
-	pMat[1*4 + 1] = prob_nochange;
-	pMat[1*4 + 2] = prob_change;
-	pMat[1*4 + 3] = prob_change;
-	pMat[2*4 + 0] = prob_change;
-	pMat[2*4 + 1] = prob_change;
-	pMat[2*4 + 2] = prob_nochange;
-	pMat[2*4 + 3] = prob_change;
-	pMat[3*4 + 0] = prob_change;
-	pMat[3*4 + 1] = prob_change;
-	pMat[3*4 + 2] = prob_change;
-	pMat[3*4 + 3] = prob_nochange;
-	std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
+	pMat[0][0] = prob_nochange;
+	pMat[0][1] = prob_change;
+	pMat[0][2] = prob_change;
+	pMat[0][3] = prob_change;
+	pMat[1][0] = prob_change;
+	pMat[1][1] = prob_nochange;
+	pMat[1][2] = prob_change;
+	pMat[1][3] = prob_change;
+	pMat[2][0] = prob_change;
+	pMat[2][1] = prob_change;
+	pMat[2][2] = prob_nochange;
+	pMat[2][3] = prob_change;
+	pMat[3][0] = prob_change;
+	pMat[3][1] = prob_change;
+	pMat[3][2] = prob_change;
+	pMat[3][3] = prob_nochange;
+	std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
 }
 
 
-
-class PatternSummary {
-	public:
-		void clear() {
-			this->byParsScore.clear();
-		}
-		unsigned incrementCount(unsigned s, BitField m) {
-			if (s >= this->byParsScore.size())
-				this->byParsScore.resize(s + 1);
-			BitsToCount & mapper = this->byParsScore[s];
-			BitsToCount::iterator mIt = mapper.find(m);
-			if (mIt == mapper.end()) {
-				mapper[m] = 1;
-				return 1;
-			}
-			unsigned prev = mIt->second;
-			mIt->second = 1 + prev;
-			return 1 + prev;
-		}
+unsigned PatternSummary::incrementCount(unsigned s, BitField m) {
+	if (s >= this->byParsScore.size())
+		this->byParsScore.resize(s + 1);
+	BitsToCount & mapper = this->byParsScore[s];
+	BitsToCount::iterator mIt = mapper.find(m);
+	if (mIt == mapper.end()) {
+		mapper[m] = 1;
+		return 1;
+	}
+	unsigned prev = mIt->second;
+	mIt->second = 1 + prev;
+	return 1 + prev;
+}
 		
-		void write(std::ostream & out) const {
-			const BitsToCount & constPatsMap = this->byParsScore[0];
-			for (std::vector<BitField>::const_iterator cIt = gSingleStateCodes.begin(); cIt != gSingleStateCodes.end(); ++cIt) {
-				BitsToCount::const_iterator queryIt = constPatsMap.find(*cIt);
-				unsigned obsCount = (queryIt == constPatsMap.end() ? 0 : queryIt->second);
-				out << "Observed steps = 0 states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
-			}
-			for (unsigned score = 1; score < this->byParsScore.size(); ++score) {
-				const BitsToCount & currPatsMap = this->byParsScore[score];
-				for (std::vector<BitField>::const_iterator cIt = gMultiStateCodes.begin(); cIt != gMultiStateCodes.end(); ++cIt) {
-					BitsToCount::const_iterator queryIt = currPatsMap.find(*cIt);
-					unsigned obsCount = (queryIt == currPatsMap.end() ? 0 : queryIt->second);
-					out << "Observed steps = " << score << " states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
-				}
-			}
-		}
-		
-	private:
-		
-		std::vector<BitsToCount> byParsScore; // for each parsimony score, this stores a map of the "mask" of bits and the count
-		
-};
-
-
-void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo) {
-
-	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
-			ndIt != preorderVec.rend();
-			++ndIt) {
-		const NxsSimpleNode * nd = *ndIt;
-		std::vector<NxsSimpleNode *> children = nd->GetChildren();
-		const unsigned numChildren = children.size();
-		NodeID currNdId(nd, 0);
-		if (numChildren > 0) {
-			delete nodeIDToProbInfo[currNdId];
+void PatternSummary::write(std::ostream & out) const {
+	const BitsToCount & constPatsMap = this->byParsScore[0];
+	for (std::vector<BitField>::const_iterator cIt = gSingleStateCodes.begin(); cIt != gSingleStateCodes.end(); ++cIt) {
+		BitsToCount::const_iterator queryIt = constPatsMap.find(*cIt);
+		unsigned obsCount = (queryIt == constPatsMap.end() ? 0 : queryIt->second);
+		out << "Observed steps = 0 states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
+	}
+	for (unsigned score = 1; score < this->byParsScore.size(); ++score) {
+		const BitsToCount & currPatsMap = this->byParsScore[score];
+		for (std::vector<BitField>::const_iterator cIt = gMultiStateCodes.begin(); cIt != gMultiStateCodes.end(); ++cIt) {
+			BitsToCount::const_iterator queryIt = currPatsMap.find(*cIt);
+			unsigned obsCount = (queryIt == currPatsMap.end() ? 0 : queryIt->second);
+			out << "Observed steps = " << score << " states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
 		}
 	}
 }
@@ -392,16 +318,18 @@ void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldM
 		}
 	}
 	assert(rootParsInfo != 0L);
-	rootParsInfo->write(std::cerr);
+	std::cerr << "from line " << __LINE__ << ":\n" ; rootParsInfo->write(std::cerr);
 	if (summary) {
 		summary->clear();
 		for (unsigned p = 0; p < rootParsInfo->size(); ++p) {
 			summary->incrementCount(rootParsInfo->score[p], rootParsInfo->allSeen[p]);
 		}
-		summary->write(std::cerr);
+		std::cerr << "from line " << __LINE__ << ":\n" ; summary->write(std::cerr);
 	}
 }
 
+/// \throws NxsException for gaps or ambiguous cells
+/// \returns a string of the symbols for each state (length == nStates).
 std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatrix & mat, const NxsUnsignedSet * toInclude) {
 	NxsString errormsg;
 	std::vector<const NxsDiscreteDatatypeMapper *> mappers = cb.GetAllDatatypeMappers();
@@ -541,7 +469,7 @@ int main(int argc, char * argv[]) {
 		BitFieldMatrix bitFieldMatrix;
 		std::string symbols = convertToBitFieldMatrix(*charsBlock, bitFieldMatrix);
 		initializeGlobals(symbols);
-		writeBitFieldMatrix(std::cerr, bitFieldMatrix);
+		std::cerr << "from line " << __LINE__ << ":\n" ; writeBitFieldMatrix(std::cerr, bitFieldMatrix);
 
 		const unsigned nTreesBlocks = nexusReader.GetNumTreesBlocks(taxaBlock);
 		if (nTreesBlocks == 0) {
