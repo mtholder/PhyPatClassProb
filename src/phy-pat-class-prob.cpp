@@ -266,6 +266,7 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 	this->byParsScore.clear();
 	this->byParsScore.resize(maxParsScore + 1);
 	this->nLeavesBelow = leftPI.getNLeavesBelow() + rightPI.getNLeavesBelow();
+	unsigned obsMaxParsScore = 0;
 	// do the calculations for staying in the constant patterns, these are more simple than the general calcs...
 	if (true) { //@TEMP if true so that variables are scoped.
 		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
@@ -291,12 +292,15 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 	}
 	
 	// order N
-	for (unsigned currScore = 1; currScore <=maxParsScore; ++currScore) {
+	for (unsigned currScore = 1; currScore <= maxParsScore; ++currScore) {
+		bool scObserved = false;
 		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
 		for (std::vector<BitField>::const_iterator scIt = blob.multiStateCodes.begin(); 
 				scIt != blob.multiStateCodes.end();
 				++scIt) {
 			BitField downPass = *scIt;
+			std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "downPass = " << (int)downPass << '\n';
+
 			const unsigned numStatesInMask = blob.getNumStates(downPass);
 			if (numStatesInMask - 1 > currScore)
 				continue; // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
@@ -305,7 +309,7 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 			
 			const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
 			unsigned accumScore = currScore - 1;
-			this->allCalcsForAllPairs(forCurrScoreDownPass, 
+			scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
 									  forUnions,
 									  leftPI,
 									  leftPMatVec,
@@ -313,23 +317,31 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 									  rightPMatVec,
 									  accumScore,
 									  false,
-									  blob);
-			const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
-			accumScore = currScore;
-			this->allCalcsForAllPairs(forCurrScoreDownPass, 
-									  forIntersections,
-									  leftPI,
-									  leftPMatVec,
-									  rightPI,
-									  rightPMatVec,
-									  accumScore,
-									  true,
-									  blob);
+									  blob) || scObserved;
+			if (leftMaxP + rightMaxP >= currScore) {
+				const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
+				accumScore = currScore;
+				scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+										  forIntersections,
+										  leftPI,
+										  leftPMatVec,
+										  rightPI,
+										  rightPMatVec,
+										  accumScore,
+										  true,
+										  blob) || scObserved;
+			}
 		}
+		if (scObserved)
+			obsMaxParsScore = currScore;
+	}
+	if (obsMaxParsScore < maxParsScore) {
+		std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+		this->byParsScore.resize(obsMaxParsScore + 1);
 	}
 }
 
-void ProbInfo::allCalcsForAllPairs(
+bool ProbInfo::allCalcsForAllPairs(
 			MaskToProbsByState & forCurrScoreDownPass, 
 			const VecMaskPair & pairVec,
 			const ProbInfo & leftPI,
@@ -342,9 +354,11 @@ void ProbInfo::allCalcsForAllPairs(
 {	// order (2^k)^2
 	const unsigned leftMaxP = leftPI.getMaxParsScore();
 	const unsigned rightMaxP = rightPI.getMaxParsScore();
+	bool probsAdded = false;
 	for (VecMaskPair::const_iterator fuIt = pairVec.begin(); fuIt != pairVec.end(); ++fuIt) {
 		const BitField leftDown = fuIt->first;
 		const BitField rightDown = fuIt->second;
+		std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "leftDown = " << (int)leftDown << " rightDown = " << (int)rightDown << '\n';
 		assert(leftDown > 0);
 		assert(rightDown > 0);
 		if (doingIntersection) {
@@ -353,14 +367,14 @@ void ProbInfo::allCalcsForAllPairs(
 		else {
 			assert((leftDown & rightDown) == 0);
 		}
-		const unsigned leftMinAccum = leftDown - 1;
-		const unsigned rightMinAccum = rightDown - 1;
+		const unsigned leftMinAccum = blob.getNumStates(leftDown) - 1;
+		const unsigned rightMinAccum = blob.getNumStates(rightDown) - 1;
 		if (leftMinAccum + rightMinAccum > accumScore)
 			continue;
 		const unsigned acMaxLeftAccum = std::min(accumScore - rightMinAccum, leftMaxP);
 		const unsigned acMaxRightAccum = std::min(accumScore - leftMinAccum, rightMaxP);
 		const unsigned acMinLeftAccum = std::max(leftMinAccum, accumScore - acMaxRightAccum);
-		if (false) {
+		if (true) {
 			std::cerr << "accumScore = " << accumScore << '\n';
 			std::cerr << "accumScore = " << accumScore << '\n';
 			std::cerr << "leftMinAccum = " << leftMinAccum << '\n';
@@ -385,8 +399,6 @@ void ProbInfo::allCalcsForAllPairs(
 			// order (2^k)
 			for (BitFieldRow::const_iterator lasIt = leftSSRow.begin(); lasIt != leftSSRow.end(); ++lasIt) {
 				const BitField leftAllStates = *lasIt;
-				if (leftAllStates - 1 > leftAccum)
-					continue;
 					
 				const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
 				if (leftProbs == 0L)
@@ -396,8 +408,6 @@ void ProbInfo::allCalcsForAllPairs(
 				// order (2^k)
 				for (BitFieldRow::const_iterator rasIt = rightSSRow.begin(); rasIt != rightSSRow.end(); ++rasIt) {
 					const BitField rightAllStates = *rasIt;
-					if (rightAllStates - 1 > rightAccum)
-						continue;
 					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 					if (rightProbs == 0L)
 						continue; 
@@ -409,14 +419,14 @@ void ProbInfo::allCalcsForAllPairs(
 						ancVec = &(forCurrScoreDownPass[ancAllField]);
 						ancVec->assign(blob.nRates*blob.nStates, 0.0);
 					}
-					
+					probsAdded = true;
+					std::cerr << __LINE__ << " calling addToAncProbVec\n";
 					addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
-					
-					
 				}
 			}
 		}
 	}
+	return probsAdded;
 }
 
 
@@ -569,6 +579,10 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 			}
 		}
 		assert(rootProbInfo != 0L);
+		
+		const ExpectedPatternSummary eps(*rootProbInfo, blob);
+		eps.write(std::cout);
+		
 	}
 	catch (...) {
 		freeProbInfo(preorderVec, nodeIDToProbInfo);
@@ -579,6 +593,14 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 	freeProbInfo(preorderVec, nodeIDToProbInfo);
 	if (needToDelRootProbInfo)
 		delete rootProbInfo;
+}
+
+ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, const CommonInfo & blob) {
+	const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
+}
+void ExpectedPatternSummary::write(std::ostream & out) const {
+	
+	
 }
 
 void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &mat, std::ostream & out, PatternSummary *summary, const CommonInfo & blob) {

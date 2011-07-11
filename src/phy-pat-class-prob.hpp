@@ -106,8 +106,16 @@ class ProbForParsScore{
         
 };
 
+class ProbInfo;
 class ExpectedPatternSummary {
+    public:
+        ExpectedPatternSummary(const ProbInfo &, const CommonInfo &);
+        void write(std::ostream &) const;        
+    private:
+        std::vector< std::vector<double> > probsByStepsThenObsStates;
 };
+
+
 class ProbInfo {
 	public:
 	    void createForTip(const CommonInfo &);
@@ -133,7 +141,7 @@ class ProbInfo {
                 const double *** rightPMatVec, const std::vector<double> * rightProbs,
                 const CommonInfo & blob);
             
-        void allCalcsForAllPairs(
+        bool allCalcsForAllPairs(
                 MaskToProbsByState & forCurrScoreDownPass,
                 const VecMaskPair & pairVec,
                 const ProbInfo & leftPI,
