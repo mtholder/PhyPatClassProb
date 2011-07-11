@@ -110,7 +110,7 @@ class ProbInfo;
 class ExpectedPatternSummary {
     public:
         ExpectedPatternSummary(const ProbInfo &, const CommonInfo &);
-        void write(std::ostream &) const;        
+        void write(std::ostream &, const CommonInfo &) const;        
     private:
         std::vector< std::vector<double> > probsByStepsThenObsStates;
 };
