@@ -27,6 +27,10 @@ typedef double ** TiMat;
 typedef double *** TiMatVec;
 typedef void (* TiMatFunc)(double, TiMatVec);
 
+typedef std::pair<BitField, BitField> MaskPair;
+typedef std::vector<MaskPair> VecMaskPair;
+typedef std::map<BitField, VecMaskPair> MaskToVecMaskPair;
+typedef std::vector<VecMaskPair> VMaskToVecMaskPair;
 
 class ParsInfo {
 	public:
@@ -73,6 +77,15 @@ inline const std::vector<double> * getProbsForStatesMask(const MaskToProbsByStat
     return &(scIt->second);
 }
 
+inline std::vector<double> * getMutableProbsForStatesMask(MaskToProbsByState *m, const BitField sc) {
+    if (m == 0L)
+        return 0L;
+    MaskToProbsByState::iterator scIt = m->find(sc);
+    if (scIt == m->end())
+        return 0L;
+    return &(scIt->second);
+}
+
 class ProbForParsScore{
     public:
     
@@ -93,6 +106,8 @@ class ProbForParsScore{
         
 };
 
+class ExpectedPatternSummary {
+};
 class ProbInfo {
 	public:
 	    void createForTip(const CommonInfo &);
@@ -112,10 +127,23 @@ class ProbInfo {
 	protected:
 		unsigned nLeavesBelow;
 	
-        void addToAncProbVec(std::vector<double> & pVec, 
-            const double *** leftPMatVec, const std::vector<double> * leftProbs,
-            const double *** rightPMatVec, const std::vector<double> * rightProbs,
-            const CommonInfo & blob);
+        void addToAncProbVec(
+                std::vector<double> & pVec, 
+                const double *** leftPMatVec, const std::vector<double> * leftProbs,
+                const double *** rightPMatVec, const std::vector<double> * rightProbs,
+                const CommonInfo & blob);
+            
+        void allCalcsForAllPairs(
+                MaskToProbsByState & forCurrScoreDownPass,
+                const VecMaskPair & pairVec,
+                const ProbInfo & leftPI,
+                const double *** leftPMatVec,
+                const ProbInfo & rightPI,
+                const double *** rightPMatVec,
+                const unsigned accumScore,
+                const bool doingIntersection,
+                const CommonInfo & blob);
+                
 	    std::vector<ProbForParsScore> byParsScore;
 };
 

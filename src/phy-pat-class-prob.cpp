@@ -9,6 +9,7 @@ void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeID
 
 // Globals (all should start with g[A-Z] pattern to make it easier to find and replace them later).
 const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
+
 struct CommonInfo {
 	unsigned nStates;
 	std::map<BitField, std::string> stateCodesToSymbols;
@@ -19,12 +20,20 @@ struct CommonInfo {
 	//		state codes for the fundamental states in order.
 	std::vector<BitField> stateIndexToStateCode; 
 	std::vector<BitField> multiStateCodes;
-	BitsToCount stateCodeToNumStates;
+	std::vector<unsigned> stateCodeToNumStates;
 	ScopedDblThreeDMatrix firstMatVec;
 	ScopedDblThreeDMatrix secondMatVec;
 	std::vector<unsigned> zeroVec;
 	unsigned nRates;
 	std::vector<double> rates;
+	
+	VMaskToVecMaskPair pairsForIntersectionForEachDownPass;
+	VMaskToVecMaskPair pairsForUnionForEachDownPass;
+	BitFieldMatrix statesSupersets;
+	
+	unsigned getNumStates(BitField mask) const {
+		return stateCodeToNumStates[mask];
+	}
 };
 
 CommonInfo * gBlob = 0L;
@@ -66,7 +75,6 @@ void initializeGlobals(const std::string & symbols, CommonInfo & blob) {
 	blob.singleStateCodes.clear();
 	blob.multiStateCodes.clear();
 	blob.stateCodesToSymbols.clear();
-	blob.stateCodeToNumStates.clear();
 	
 	blob.nStates = blob.alphabet.length();
 	blob.firstMatVec.Free();
@@ -75,6 +83,7 @@ void initializeGlobals(const std::string & symbols, CommonInfo & blob) {
 	blob.secondMatVec.Initialize(blob.nRates, blob.nStates, blob.nStates);
 	
 	unsigned lbfU = (1 << blob.nStates) - 1;
+	blob.stateCodeToNumStates.assign(lbfU + 1, 0);
 	const BitField lastBF = BitField(lbfU);
 	BitField sc = 1;
 	for (;;++sc) {
@@ -85,19 +94,96 @@ void initializeGlobals(const std::string & symbols, CommonInfo & blob) {
 			blob.stateIndexToStateCode.push_back(sc);
 			assert(blob.stateIndexToStateCode[stInd] == sc);
 			blob.stateCodesToSymbols[sc] = blob.alphabet[stInd];
-			blob.stateCodeToNumStates[sc] = 1;
+			blob.stateCodeToNumStates.at(sc) = 1;
 		}
 		else {
 			blob.multiStateCodes.push_back(sc);
 			std::string sym;
 			for (std::set<BitField>::const_iterator sbfIt = sbf.begin(); sbfIt != sbf.end(); ++sbfIt)
 				sym.append(blob.stateCodesToSymbols[*sbfIt]);
-			blob.stateCodeToNumStates[sc] = sbf.size();
+			blob.stateCodeToNumStates.at(sc) = sbf.size();
 			blob.stateCodesToSymbols[sc] = sym;
 		}
+		
+		
+		
 		if (sc == lastBF)
 			break;
 	}
+	
+	blob.pairsForUnionForEachDownPass.clear();
+	blob.pairsForUnionForEachDownPass.resize(lastBF + 1);
+	blob.pairsForIntersectionForEachDownPass.clear();
+	blob.pairsForIntersectionForEachDownPass.resize(lastBF + 1);
+
+	for (sc = 1;;++sc) {
+		if (blob.getNumStates(sc) > 1) {
+			VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[sc];
+			for (BitField leftSC = 1; leftSC < sc ; ++leftSC) {
+				if ((leftSC | sc) != sc)
+					continue;
+				BitField rightSC = sc - leftSC;
+				assert((rightSC | leftSC) == sc);
+				forUnions.push_back(MaskPair(leftSC, rightSC));
+			}
+		}
+
+		VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[sc];
+		for (BitField leftSC = 1; leftSC <= lastBF ; ++leftSC) {
+			for (BitField rightSC = 1; rightSC <= lastBF ; ++rightSC) {
+				if ((leftSC & rightSC) != sc)
+					continue;
+				forIntersections.push_back(MaskPair(leftSC, rightSC));
+			}
+		}
+		
+		if (sc == lastBF)
+			break;
+
+	}
+
+	blob.statesSupersets.clear();
+	blob.statesSupersets.resize(lastBF + 1);
+	for (sc = 1;;++sc) {
+		BitFieldRow & ssRow = blob.statesSupersets[sc];
+		for (BitField ss = sc;; ++ss) {
+			if ((ss & sc) == sc)
+				ssRow.push_back(ss);
+			if (ss == lastBF)
+				break;
+		}
+		
+		if (sc == lastBF)
+			break;
+
+	}
+
+
+	
+	std::cerr << "from line " << __LINE__ << ":\n";
+	for (sc = 1;;++sc) {
+		std::cerr << "Combos with unions that lead to " << blob.stateCodesToSymbols.find(sc)->second << ":";
+		const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[sc];
+		for (VecMaskPair::const_iterator fuIt = forUnions.begin(); fuIt != forUnions.end(); ++fuIt) {
+			std::cerr << " (\"" << blob.stateCodesToSymbols.find(fuIt->first)->second;
+			std::cerr << "\", \"" << blob.stateCodesToSymbols.find(fuIt->second)->second;
+			std::cerr << "\")   ";
+		}
+		std::cerr << "\n";
+
+		std::cerr << "Combos with intersections that lead to " << blob.stateCodesToSymbols.find(sc)->second << ":";
+		const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[sc];
+		for (VecMaskPair::const_iterator fuIt = forIntersections.begin(); fuIt != forIntersections.end(); ++fuIt) {
+			std::cerr << " (\"" << blob.stateCodesToSymbols.find(fuIt->first)->second;
+			std::cerr << "\", \"" << blob.stateCodesToSymbols.find(fuIt->second)->second;
+			std::cerr << "\")   ";
+		}
+		std::cerr << "\n";
+		if (sc == lastBF)
+			break;
+	}
+	
+	
 }
 
 
@@ -174,9 +260,9 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
 	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
 	
-	unsigned leftMaxP = leftPI.getMaxParsScore();
-	unsigned rightMaxP = rightPI.getMaxParsScore();
-	unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
+	const unsigned leftMaxP = leftPI.getMaxParsScore();
+	const unsigned rightMaxP = rightPI.getMaxParsScore();
+	const unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
 	this->byParsScore.clear();
 	this->byParsScore.resize(maxParsScore + 1);
 	this->nLeavesBelow = leftPI.getNLeavesBelow() + rightPI.getNLeavesBelow();
@@ -204,8 +290,132 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 		}
 	}
 	
+	// order N
 	for (unsigned currScore = 1; currScore <=maxParsScore; ++currScore) {
-		
+		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
+		for (std::vector<BitField>::const_iterator scIt = blob.multiStateCodes.begin(); 
+				scIt != blob.multiStateCodes.end();
+				++scIt) {
+			BitField downPass = *scIt;
+			const unsigned numStatesInMask = blob.getNumStates(downPass);
+			if (numStatesInMask - 1 > currScore)
+				continue; // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
+			
+			MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
+			
+			const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
+			unsigned accumScore = currScore - 1;
+			this->allCalcsForAllPairs(forCurrScoreDownPass, 
+									  forUnions,
+									  leftPI,
+									  leftPMatVec,
+									  rightPI,
+									  rightPMatVec,
+									  accumScore,
+									  false,
+									  blob);
+			const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
+			accumScore = currScore;
+			this->allCalcsForAllPairs(forCurrScoreDownPass, 
+									  forIntersections,
+									  leftPI,
+									  leftPMatVec,
+									  rightPI,
+									  rightPMatVec,
+									  accumScore,
+									  true,
+									  blob);
+		}
+	}
+}
+
+void ProbInfo::allCalcsForAllPairs(
+			MaskToProbsByState & forCurrScoreDownPass, 
+			const VecMaskPair & pairVec,
+			const ProbInfo & leftPI,
+			const double *** leftPMatVec,
+			const ProbInfo & rightPI,
+			const double *** rightPMatVec,
+			const unsigned accumScore,
+			const bool doingIntersection,
+			const CommonInfo & blob)
+{	// order (2^k)^2
+	const unsigned leftMaxP = leftPI.getMaxParsScore();
+	const unsigned rightMaxP = rightPI.getMaxParsScore();
+	for (VecMaskPair::const_iterator fuIt = pairVec.begin(); fuIt != pairVec.end(); ++fuIt) {
+		const BitField leftDown = fuIt->first;
+		const BitField rightDown = fuIt->second;
+		assert(leftDown > 0);
+		assert(rightDown > 0);
+		if (doingIntersection) {
+			assert((leftDown & rightDown) != 0);
+		}
+		else {
+			assert((leftDown & rightDown) == 0);
+		}
+		const unsigned leftMinAccum = leftDown - 1;
+		const unsigned rightMinAccum = rightDown - 1;
+		if (leftMinAccum + rightMinAccum > accumScore)
+			continue;
+		const unsigned acMaxLeftAccum = std::min(accumScore - rightMinAccum, leftMaxP);
+		const unsigned acMaxRightAccum = std::min(accumScore - leftMinAccum, rightMaxP);
+		const unsigned acMinLeftAccum = std::max(leftMinAccum, accumScore - acMaxRightAccum);
+		if (false) {
+			std::cerr << "accumScore = " << accumScore << '\n';
+			std::cerr << "accumScore = " << accumScore << '\n';
+			std::cerr << "leftMinAccum = " << leftMinAccum << '\n';
+			std::cerr << "rightMinAccum = " << rightMinAccum << '\n';
+			std::cerr << "acMaxLeftAccum = " << acMaxLeftAccum << '\n';
+			std::cerr << "acMaxRightAccum = " << acMaxRightAccum << '\n';
+			std::cerr << "acMinLeftAccum = " << acMinLeftAccum << '\n';
+		}
+		// order N
+		for (unsigned leftAccum = acMinLeftAccum; leftAccum <= acMaxLeftAccum; ++leftAccum) {
+			const unsigned rightAccum = accumScore - leftAccum;
+			assert(rightAccum <= rightMaxP);
+			const ProbForParsScore & leftFPS = leftPI.getByParsScore(leftAccum);
+			const MaskToProbsByState * leftM2PBS = leftFPS.getMapPtrForDownPass(leftDown);
+			if (leftM2PBS == 0L)
+				continue;
+			const ProbForParsScore & rightFPS = rightPI.getByParsScore(rightAccum);
+			const MaskToProbsByState * rightM2PBS = rightFPS.getMapPtrForDownPass(rightDown);
+			if (rightM2PBS == 0L)
+				continue;
+			const BitFieldRow & leftSSRow = blob.statesSupersets[leftDown];
+			// order (2^k)
+			for (BitFieldRow::const_iterator lasIt = leftSSRow.begin(); lasIt != leftSSRow.end(); ++lasIt) {
+				const BitField leftAllStates = *lasIt;
+				if (leftAllStates - 1 > leftAccum)
+					continue;
+					
+				const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
+				if (leftProbs == 0L)
+					continue; 
+					
+				const BitFieldRow & rightSSRow = blob.statesSupersets[rightDown];
+				// order (2^k)
+				for (BitFieldRow::const_iterator rasIt = rightSSRow.begin(); rasIt != rightSSRow.end(); ++rasIt) {
+					const BitField rightAllStates = *rasIt;
+					if (rightAllStates - 1 > rightAccum)
+						continue;
+					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
+					if (rightProbs == 0L)
+						continue; 
+					
+					const BitField ancAllField = (rightAllStates|leftAllStates);
+					
+					std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
+					if (ancVec == 0L) {
+						ancVec = &(forCurrScoreDownPass[ancAllField]);
+						ancVec->assign(blob.nRates*blob.nStates, 0.0);
+					}
+					
+					addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+					
+					
+				}
+			}
+		}
 	}
 }
 
