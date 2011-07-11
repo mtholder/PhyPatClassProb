@@ -143,11 +143,15 @@ void ParsInfo::write(std::ostream & o) const {
 	o << "totalScore = " << totalScore << '\n';
 }
 
-void ProbInfo::calculate(ProbInfo * leftPI, double leftEdgeLen, 
-					   ProbInfo * rightPI, double rightEdgeLen,
+void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen, 
+					   const ProbInfo & rightPI, double rightEdgeLen,
 					   TiMatFunc fn) {
+					   
 	fn(leftEdgeLen, gFirstMat);
 	fn(rightEdgeLen, gSecondMat);
+	unsigned leftMaxP = leftPI.getMaxParsScore();
+	unsigned rightMaxP = rightPI.getMaxParsScore();
+	unsigned maxParsScore = 1 + 
 }
 
 
@@ -237,11 +241,13 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 				const NxsSimpleNode * rightNd = children[1];
 				NodeIDToProbInfo::const_iterator leftPIIt= nodeIDToProbInfo.find(NodeID(leftNd, 0));
 				assert(leftPIIt != nodeIDToProbInfo.end());
+				assert(leftPIIt->second);
 				NodeIDToProbInfo::const_iterator rightPIIt= nodeIDToProbInfo.find(NodeID(rightNd, 0));
 				assert(rightPIIt != nodeIDToProbInfo.end());
+				assert(rightPIIt->second);
 				
-				currProbInfo->calculate(leftPIIt->second, leftNd->GetEdgeToParent().GetDblEdgeLen(),
-										rightPIIt->second, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+				currProbInfo->calculate(*leftPIIt->second, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+										*rightPIIt->second, rightNd->GetEdgeToParent().GetDblEdgeLen(),
 										tiMatFunc);
 				
 				if (numChildren > 2) {

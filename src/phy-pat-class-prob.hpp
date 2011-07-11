@@ -58,13 +58,20 @@ class ParsInfo {
 typedef std::map<NodeID, ParsInfo> NodeIDToParsInfo;
 
 
-
+class ProbForParsScore{
+    
+};    
 class ProbInfo {
 	public:
-		void calculate(ProbInfo * leftPI, double leftEdgeLen, 
-					   ProbInfo * rightPI, double rightEdgeLen,
+		void calculate(const ProbInfo & leftPI, double leftEdgeLen, 
+					   const ProbInfo & rightPI, double rightEdgeLen,
 					   TiMatFunc fn);
+		unsigned getMaxParScore() const {
+		    assert(!this->byParsScore.empty());
+		    return this->byParsScore.size() - 1;
+		}
 	protected:
+	    std::vector<ProbForParsScore> byParsScore;
 };
 
 typedef std::map<NodeID, ProbInfo *> NodeIDToProbInfo;
