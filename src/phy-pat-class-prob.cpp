@@ -5,26 +5,31 @@
 
 
 void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo);
-void initializeGlobals(const std::string & symbols);
 
 
 // Globals (all should start with g[A-Z] pattern to make it easier to find and replace them later).
 const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
-std::map<BitField, std::string> gStateCodesToSymbols;
-std::string gAlphabet;
-std::vector<BitField> gSingleStateCodes;
-// gStateIndexToStateCode is probably always going to be identical to
-//		gSingleStateCodes, but use gStateIndexToStateCode when you need the 
-//		state codes for the fundamental states in order.
-std::vector<BitField> gStateIndexToStateCode; 
-std::vector<BitField> gMultiStateCodes;
-BitsToCount gStateCodeToNumStates;
-ScopedDblTwoDMatrix gFirstMatVec;
-double ** gFirstMat;
-ScopedDblTwoDMatrix gSecondMatVec;
-double ** gSecondMat;
-ProbInfo gTipProbInfo;
-std::vector<unsigned> gZeroVec;
+struct CommonInfo {
+	unsigned nStates;
+	std::map<BitField, std::string> stateCodesToSymbols;
+	std::string alphabet;
+	std::vector<BitField> singleStateCodes;
+	// stateIndexToStateCode is probably always going to be identical to
+	//		singleStateCodes, but use stateIndexToStateCode when you need the 
+	//		state codes for the fundamental states in order.
+	std::vector<BitField> stateIndexToStateCode; 
+	std::vector<BitField> multiStateCodes;
+	BitsToCount stateCodeToNumStates;
+	ScopedDblThreeDMatrix firstMatVec;
+	ScopedDblThreeDMatrix secondMatVec;
+	std::vector<unsigned> zeroVec;
+	unsigned nRates;
+	std::vector<double> rates;
+};
+
+CommonInfo * gBlob = 0L;
+
+void initializeGlobals(const std::string & symbols, CommonInfo &);
 
 
 std::set<BitField> toElements(BitField sc) {
@@ -54,41 +59,41 @@ void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeID
 }
 
 
-void initializeGlobals(const std::string & symbols) {
-	gAlphabet = symbols;
-	gSingleStateCodes.clear();
-	gMultiStateCodes.clear();
-	gStateCodesToSymbols.clear();
-	gStateCodeToNumStates.clear();
+void initializeGlobals(const std::string & symbols, CommonInfo & blob) {
+	blob.alphabet = symbols;
+	blob.nRates = 1;
+	blob.rates.assign(blob.nRates, 1.0);
+	blob.singleStateCodes.clear();
+	blob.multiStateCodes.clear();
+	blob.stateCodesToSymbols.clear();
+	blob.stateCodeToNumStates.clear();
 	
-	const unsigned nStates = gAlphabet.length();
-	gFirstMatVec.Free();
-	gFirstMatVec.Initialize(nStates, nStates);
-	gFirstMat = gFirstMatVec.GetAlias();
-	gSecondMatVec.Free();
-	gSecondMatVec.Initialize(nStates, nStates);
-	gSecondMat = gSecondMatVec.GetAlias();
+	blob.nStates = blob.alphabet.length();
+	blob.firstMatVec.Free();
+	blob.firstMatVec.Initialize(blob.nRates, blob.nStates, blob.nStates);
+	blob.secondMatVec.Free();
+	blob.secondMatVec.Initialize(blob.nRates, blob.nStates, blob.nStates);
 	
-	unsigned lbfU = (1 << nStates) - 1;
+	unsigned lbfU = (1 << blob.nStates) - 1;
 	const BitField lastBF = BitField(lbfU);
 	BitField sc = 1;
 	for (;;++sc) {
 		const std::set<BitField> sbf = toElements(sc);
 		if (sbf.size() == 1) {
-			unsigned stInd = gSingleStateCodes.size();
-			gSingleStateCodes.push_back(sc);
-			gStateIndexToStateCode.push_back(sc);
-			assert(gStateIndexToStateCode[stInd] == sc);
-			gStateCodesToSymbols[sc] = gAlphabet[stInd];
-			gStateCodeToNumStates[sc] = 1;
+			unsigned stInd = blob.singleStateCodes.size();
+			blob.singleStateCodes.push_back(sc);
+			blob.stateIndexToStateCode.push_back(sc);
+			assert(blob.stateIndexToStateCode[stInd] == sc);
+			blob.stateCodesToSymbols[sc] = blob.alphabet[stInd];
+			blob.stateCodeToNumStates[sc] = 1;
 		}
 		else {
-			gMultiStateCodes.push_back(sc);
+			blob.multiStateCodes.push_back(sc);
 			std::string sym;
 			for (std::set<BitField>::const_iterator sbfIt = sbf.begin(); sbfIt != sbf.end(); ++sbfIt)
-				sym.append(gStateCodesToSymbols[*sbfIt]);
-			gStateCodeToNumStates[sc] = sbf.size();
-			gStateCodesToSymbols[sc] = sym;
+				sym.append(blob.stateCodesToSymbols[*sbfIt]);
+			blob.stateCodeToNumStates[sc] = sbf.size();
+			blob.stateCodesToSymbols[sc] = sym;
 		}
 		if (sc == lastBF)
 			break;
@@ -96,12 +101,12 @@ void initializeGlobals(const std::string & symbols) {
 }
 
 
-void ParsInfo::calculateForTip(const BitFieldRow & data) {
-	assert(gZeroVec.size() >= data.size());
+void ParsInfo::calculateForTip(const BitFieldRow & data, const CommonInfo & blob) {
+	assert(blob.zeroVec.size() >= data.size());
 	this->numPatterns = data.size();
 	this->downPass = &data[0];
 	this->allSeen = &data[0];
-	this->score = &gZeroVec[0];
+	this->score = &blob.zeroVec[0];
 }
 void ParsInfo::calculateForInternal(const ParsInfo & leftData, const ParsInfo & rightData) {
 	this->numPatterns = leftData.size();
@@ -143,20 +148,91 @@ void ParsInfo::write(std::ostream & o) const {
 	o << "totalScore = " << totalScore << '\n';
 }
 
+void ProbInfo::createForTip(const CommonInfo & blob) {
+	this->byParsScore.resize(1);
+	ProbForParsScore & forZeroSteps = this->byParsScore[0];
+	unsigned stateIndex = 0;
+	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+		 	scIt != blob.singleStateCodes.end();
+		 	++scIt, ++stateIndex) {
+		const BitField sc = *scIt;
+		std::vector<double> & pVec = forZeroSteps.byDownPass[sc][sc];
+		pVec.assign(blob.nRates*blob.nStates, 0.0);
+		for (unsigned r = 0; r < blob.nRates; ++r)
+			pVec[blob.nStates*r + stateIndex] = 1.0;
+	}
+}
+
 void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen, 
 					   const ProbInfo & rightPI, double rightEdgeLen,
-					   TiMatFunc fn) {
-					   
-	fn(leftEdgeLen, gFirstMat);
-	fn(rightEdgeLen, gSecondMat);
+					   TiMatFunc fn,
+					   const CommonInfo & blob) {
+	std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculate \n" ;
+	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
+	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
+	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
+	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
+	
 	unsigned leftMaxP = leftPI.getMaxParsScore();
 	unsigned rightMaxP = rightPI.getMaxParsScore();
-	unsigned maxParsScore = 1 + 
+	unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
+	this->byParsScore.clear();
+	this->byParsScore.resize(maxParsScore);
+
+	// do the calculations for staying in the constant patterns, these are more simple than the general calcs...
+	if (true) { //@TEMP if true so that variables are scoped.
+		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
+		const ProbForParsScore & rightFPS = rightPI.getByParsScore(0);
+		ProbForParsScore & forZeroSteps = this->byParsScore[0];
+		
+		
+		unsigned stateIndex = 0;
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+				scIt != blob.singleStateCodes.end();
+				++scIt, ++stateIndex) {
+			const BitField sc = *scIt;
+			const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndMask(sc, sc);
+			assert(leftProbs);
+			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndMask(sc, sc);
+			assert(rightProbs);
+	
+			std::vector<double> & pVec = forZeroSteps.byDownPass[sc][sc];
+			pVec.assign(blob.nRates*blob.nStates, 0.0);
+			
+			addToAncProbVec(pVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+		}
+	}
 }
 
 
+void ProbInfo::addToAncProbVec(std::vector<double> & pVec, 
+		const double *** leftPMatVec, const std::vector<double> * leftProbs,
+		const double *** rightPMatVec, const std::vector<double> * rightProbs,
+		const CommonInfo & blob) {
+	if (leftProbs == 0L || rightProbs == 0L)
+		return;
+	unsigned rOffset = 0;
+	for (unsigned r = 0; r < blob.nRates; ++r) {
+		const double ** leftPMat = leftPMatVec[r];
+		const double ** rightPMat = rightPMatVec[r];
+		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
+			double leftProb = 0.0;
+			double rightProb = 0.0;
+			for (unsigned desState = 0; desState < blob.nStates; ++desState) {
+				const double leftTiProb = leftPMat[ancState][desState];
+				const double leftAccumProb = (*leftProbs)[rOffset + desState];
+				leftProb += leftTiProb*leftAccumProb;
+				const double rightTiProb = rightPMat[ancState][desState];
+				const double rightAccumProb = (*rightProbs)[rOffset + desState];
+				rightProb += rightTiProb*rightAccumProb;
+			}
+			pVec[rOffset + ancState] += leftProb*rightProb;
+		}
+		rOffset += blob.nStates;
+	}
+}
+
 void JCTiMat(double edgeLength, TiMat pMat) {
-	assert(gAlphabet.length() == 4);
 	const double exp_term = exp(-(4.0/3.0)*edgeLength);
 	const double prob_change = 0.25 - 0.25*exp_term;
 	const double prob_nochange = 0.25 + 0.75*exp_term;
@@ -180,6 +256,12 @@ void JCTiMat(double edgeLength, TiMat pMat) {
 	std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
 }
 
+void JCMulitCatTiMat(double edgeLen, TiMatVec pMatVec) {
+	assert(gBlob);
+	for (unsigned i = 0; i < gBlob->rates.size(); ++i) {
+		JCTiMat(edgeLen* gBlob->rates[i]*edgeLen, pMatVec[i]);
+	}
+}
 
 unsigned PatternSummary::incrementCount(unsigned s, BitField m) {
 	if (s >= this->byParsScore.size())
@@ -195,30 +277,31 @@ unsigned PatternSummary::incrementCount(unsigned s, BitField m) {
 	return 1 + prev;
 }
 		
-void PatternSummary::write(std::ostream & out) const {
+void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 	const BitsToCount & constPatsMap = this->byParsScore[0];
-	for (std::vector<BitField>::const_iterator cIt = gSingleStateCodes.begin(); cIt != gSingleStateCodes.end(); ++cIt) {
+	for (std::vector<BitField>::const_iterator cIt = blob.singleStateCodes.begin(); cIt != blob.singleStateCodes.end(); ++cIt) {
 		BitsToCount::const_iterator queryIt = constPatsMap.find(*cIt);
 		unsigned obsCount = (queryIt == constPatsMap.end() ? 0 : queryIt->second);
-		out << "Observed steps = 0 states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
+		out << "Observed steps = 0 states = " << blob.stateCodesToSymbols.find(*cIt)->second << " count = " << obsCount  << '\n';
 	}
 	for (unsigned score = 1; score < this->byParsScore.size(); ++score) {
 		const BitsToCount & currPatsMap = this->byParsScore[score];
-		for (std::vector<BitField>::const_iterator cIt = gMultiStateCodes.begin(); cIt != gMultiStateCodes.end(); ++cIt) {
+		for (std::vector<BitField>::const_iterator cIt = blob.multiStateCodes.begin(); cIt != blob.multiStateCodes.end(); ++cIt) {
 			BitsToCount::const_iterator queryIt = currPatsMap.find(*cIt);
 			unsigned obsCount = (queryIt == currPatsMap.end() ? 0 : queryIt->second);
-			out << "Observed steps = " << score << " states = " << gStateCodesToSymbols[*cIt] << " count = " << obsCount  << '\n';
+			out << "Observed steps = " << score << " states = " << blob.stateCodesToSymbols.find(*cIt)->second << " count = " << obsCount  << '\n';
 		}
 	}
 }
 
 
-void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc ) {
+void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
 	NodeIDToProbInfo nodeIDToProbInfo;
 	ProbInfo * rootProbInfo = 0L;
 	bool needToDelRootProbInfo = false;
-	
+	ProbInfo tipProbInfo;
+	tipProbInfo.createForTip(blob);
 	try {
 		for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
 				ndIt != preorderVec.rend();
@@ -229,7 +312,7 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 			out << "In calculatePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
 			NodeID currNdId(nd, 0);
 			if (numChildren == 0) {
-				nodeIDToProbInfo[currNdId] = &gTipProbInfo;
+				nodeIDToProbInfo[currNdId] = &tipProbInfo;
 			}
 			else {
 				if (numChildren == 1)
@@ -241,14 +324,16 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 				const NxsSimpleNode * rightNd = children[1];
 				NodeIDToProbInfo::const_iterator leftPIIt= nodeIDToProbInfo.find(NodeID(leftNd, 0));
 				assert(leftPIIt != nodeIDToProbInfo.end());
-				assert(leftPIIt->second);
+				ProbInfo * leftPI = leftPIIt->second;
+				assert(leftPI);
 				NodeIDToProbInfo::const_iterator rightPIIt= nodeIDToProbInfo.find(NodeID(rightNd, 0));
 				assert(rightPIIt != nodeIDToProbInfo.end());
-				assert(rightPIIt->second);
-				
-				currProbInfo->calculate(*leftPIIt->second, leftNd->GetEdgeToParent().GetDblEdgeLen(),
-										*rightPIIt->second, rightNd->GetEdgeToParent().GetDblEdgeLen(),
-										tiMatFunc);
+				ProbInfo * rightPI = rightPIIt->second;
+				assert(rightPI);
+				ProbInfo lt, rt;
+				currProbInfo->calculate(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+										tiMatFunc, blob);
 				
 				if (numChildren > 2) {
 					if (nd != preorderVec[0] || numChildren > 3)
@@ -256,11 +341,13 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 					const NxsSimpleNode * lastNd = children.at(2);
 					NodeIDToProbInfo::const_iterator lastPIIt= nodeIDToProbInfo.find(NodeID(lastNd, 0));
 					assert(lastPIIt != nodeIDToProbInfo.end());
+					ProbInfo * lastPI = lastPIIt->second;
+					assert(lastPI);
 					rootProbInfo = new ProbInfo();
 					needToDelRootProbInfo = true;
-					rootProbInfo->calculate(currProbInfo, 0.0,
-											lastPIIt->second, lastNd->GetEdgeToParent().GetDblEdgeLen(),
-											tiMatFunc);
+					rootProbInfo->calculate(*currProbInfo, 0.0,
+											*lastPI, lastNd->GetEdgeToParent().GetDblEdgeLen(),
+											tiMatFunc, blob);
 				}
 				else if (nd == preorderVec[0])
 					rootProbInfo = currProbInfo;
@@ -279,11 +366,11 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 		delete rootProbInfo;
 }
 
-void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &mat, std::ostream & out, PatternSummary *summary) {
+void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &mat, std::ostream & out, PatternSummary *summary, const CommonInfo & blob) {
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
 	NodeIDToParsInfo nodeIDToParsInfo;
 	const ParsInfo * rootParsInfo = 0L;
-	gZeroVec.assign(mat[0].size(), 0);
+	assert(blob.zeroVec.size() == mat[0].size());
 	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
 			ndIt != preorderVec.rend();
 			++ndIt) {
@@ -295,7 +382,7 @@ void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldM
 		ParsInfo & currParsInfo = nodeIDToParsInfo[currNdId];
 		if (numChildren == 0) {
 			const unsigned taxInd = nd->GetTaxonIndex();
-			currParsInfo.calculateForTip(mat.at(taxInd));
+			currParsInfo.calculateForTip(mat.at(taxInd), blob);
 		}
 		else {
 			if (numChildren == 1)
@@ -330,7 +417,7 @@ void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldM
 		for (unsigned p = 0; p < rootParsInfo->size(); ++p) {
 			summary->incrementCount(rootParsInfo->score[p], rootParsInfo->allSeen[p]);
 		}
-		std::cerr << "from line " << __LINE__ << ":\n" ; summary->write(std::cerr);
+		std::cerr << "from line " << __LINE__ << ":\n" ; summary->write(std::cerr, blob);
 	}
 }
 
@@ -474,9 +561,12 @@ int main(int argc, char * argv[]) {
 		assert(charsBlock);
 		BitFieldMatrix bitFieldMatrix;
 		std::string symbols = convertToBitFieldMatrix(*charsBlock, bitFieldMatrix);
-		initializeGlobals(symbols);
+		CommonInfo blob;
+		initializeGlobals(symbols, blob);
+		blob.zeroVec.assign(bitFieldMatrix[0].size(), 0);
+		gBlob = &blob;
 		std::cerr << "from line " << __LINE__ << ":\n" ; writeBitFieldMatrix(std::cerr, bitFieldMatrix);
-
+		
 		const unsigned nTreesBlocks = nexusReader.GetNumTreesBlocks(taxaBlock);
 		if (nTreesBlocks == 0) {
 			std::cerr << "Expecting a file with at least 1 TREES block.\n";
@@ -492,9 +582,9 @@ int main(int argc, char * argv[]) {
 				const NxsFullTreeDescription & ftd = treesBlock->GetFullTreeDescription(treeInd);
 				if (ftd.AllEdgesHaveLengths()) {
 					NxsSimpleTree nclTree(ftd, 0, 0.0);
-					calculatePatternClassProbabilities(nclTree, std::cout, JCTiMat);
+					calculatePatternClassProbabilities(nclTree, std::cout, JCMulitCatTiMat, blob);
 					PatternSummary observed;
-					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, std::cout, &observed);
+					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, std::cout, &observed, blob);
 				}
 				else {
 					std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";
