@@ -587,6 +587,15 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 				currProbInfo->calculate(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
 										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
 										tiMatFunc, blob);
+				if (leftPI->getNLeavesBelow() > 1) {
+					delete leftPI;
+					nodeIDToProbInfo[NodeID(leftNd, 0)] = 0L;
+				}
+				if (rightPI->getNLeavesBelow() > 1) {
+					delete rightPI;
+					nodeIDToProbInfo[NodeID(rightNd, 0)] = 0L;
+				}
+				
 				
 				if (numChildren > 2) {
 					if (nd != preorderVec[0] || numChildren > 3)
