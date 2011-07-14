@@ -1,6 +1,19 @@
 #include "phy-pat-class-prob.hpp"
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <libhmsbeagle/beagle.h>
+
 #include "ncl/nxsmultiformat.h"
 #include "ncl/nxsallocatematrix.h"
+
+
+#include "pytbeaglehon/ccore/phylo_util.h"
+#include "pytbeaglehon/ccore/asrv.h"
+#include "pytbeaglehon/ccore/calc_instance.h"
+#include "pytbeaglehon/ccore/discrete_state_model.h"
+#include "pytbeaglehon/ccore/internal_like_calc_env.h"
+NxsString errormsg;
 
 
 
@@ -40,9 +53,26 @@ struct CommonInfo {
 	}
 	void initialize(const std::string & symbols);
 
+	void readModel(const std::vector<std::string> & optVec);
+
+	DSCTModelObj * dsct_model_obj;
+
+	std::vector<double> scaledEdgeLengths;
+	std::vector<int> modelIndexVector;
+	long likeCalcHandle;
+	
 	private:
+		void calcEigenSolution();
+	
 		std::vector<unsigned> stateCodeToNumStates;
 		std::map<BitField, std::string> stateCodesToSymbols;
+		
+		ScopedDblTwoDMatrix relRateMat;
+		std::vector<double> stateFreqVector;
+		
+		
+		
+		
 		
 };
 
@@ -197,6 +227,44 @@ void CommonInfo::initialize(const std::string & symbols) {
 	}
 	
 	
+	int numLeaves = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    const double * patternWeights=0L; 
+    int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    int numPartialStructs = 1;  // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    int numInstRateModels = 1 ; // we need a single q-matrix
+    const ASRVObj ** asrvObjectArray=0L;  // we won't use pytbeaglehon's asrv
+    int numProbMats= 2*(this->nRates); // we need a left and right for each rate category
+    int numEigenStorage=1;
+    int numRescalingsMultipliers=0;
+    int resourceIndex=-1;
+    long resourcePref=64;
+    long resourceReq=64;
+    int eigenIndex, numToCalc ;
+    this->dsct_model_obj = 0L;
+    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves, 
+    												    numPatterns,
+    												    patternWeights,
+    												    this->nStates,
+    												    numStateCodeArrays,
+    												    numPartialStructs, 
+    												    numInstRateModels,
+    												    asrvObjectArray,
+    												    numProbMats,
+    												    numEigenStorage,
+    												    numRescalingsMultipliers,
+    												    resourceIndex,
+    												    resourcePref,
+    												    resourceReq);
+
+	if (this->likeCalcHandle < 0) {
+		throw NxsException("Could not initialize a LikelihoodCalcInstance!");
+	}
+	const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(this->likeCalcHandle);
+    if (LCI == 0L) {
+        throw NxsException("Call to getLikeCalculatorInstance failed");
+    }    
+	this->dsct_model_obj = LCI->probModelArray[0];
 }
 
 
@@ -482,7 +550,7 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 	}
 }
 
-void JCTiMat(double edgeLength, TiMat pMat) {
+void JCTiMat(double edgeLength, TiMat pMat ) {
 	std::cerr << "JCTiMat edgeLength = " << edgeLength << '\n';
 	const double exp_term = exp(-(4.0/3.0)*edgeLength);
 	const double prob_change = 0.25 - 0.25*exp_term;
@@ -507,15 +575,37 @@ void JCTiMat(double edgeLength, TiMat pMat) {
 	std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
 }
 
-void JCMulitCatTiMat(double edgeLen, TiMatVec pMatVec) {
+void JCMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 	assert(gBlob);
-	std::cerr << "JCMulitCatTiMat edgeLen = " << edgeLen << '\n';
+	std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
 	for (unsigned i = 0; i < gBlob->rates.size(); ++i) {
 		std::cerr << "JCMulitCatTiMat gBlob->rates[" << i << "] = " << gBlob->rates[i] << '\n';
-		JCTiMat(edgeLen*(gBlob->rates[i]), pMatVec[i]); //@TEMP JC
+		JCTiMat(edgeLength*(gBlob->rates[i]), pMatVec[i]); //@TEMP JC
 	}
 }
 
+void GenericMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
+	assert(gBlob);
+	int eigenIndex = 0;
+    int numToCalc = gBlob->nRates;
+    gBlob->scaledEdgeLengths.resize(gBlob->nRates);
+	gBlob->modelIndexVector.resize(gBlob->nRates);
+	std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
+    for (int i = 0; i < gBlob->nRates; ++i) {
+	    gBlob->scaledEdgeLengths[i] = edgeLength*gBlob->rates[i];
+		std::cerr << "GenericMulitCatTiMat rates[" << i << "] = " << gBlob->rates[i] << '\n';
+    	gBlob->modelIndexVector[i] = i;
+    }
+    int rc = calcPrMatsForHandle(gBlob->likeCalcHandle, eigenIndex, numToCalc, &(gBlob->scaledEdgeLengths[0]), &(gBlob->modelIndexVector[0]));
+    if (rc != 0) {
+        throw NxsException("Call to calcPrMatsForHandle failed");
+    }
+	for (int i = 0; i < gBlob->nRates; ++i) {
+		fetchPrMat(gBlob->likeCalcHandle, i, pMatVec[i][0]);
+		std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "scaled edgeLength = " << gBlob->scaledEdgeLengths[i] << " probs = " << pMatVec[i][0][0] << ", " << pMatVec[i][0][1] << "\n";
+    }
+    
+}
 unsigned PatternSummary::incrementCount(unsigned s, BitField m) {
 	if (s >= this->byParsScore.size())
 		this->byParsScore.resize(s + 1);
@@ -761,7 +851,6 @@ void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldM
 /// \throws NxsException for gaps or ambiguous cells
 /// \returns a string of the symbols for each state (length == nStates).
 std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatrix & mat, const NxsUnsignedSet * toInclude) {
-	NxsString errormsg;
 	std::vector<const NxsDiscreteDatatypeMapper *> mappers = cb.GetAllDatatypeMappers();
 	if (mappers.empty() || mappers[0] == NULL)
 		throw NxsException("no mappers");
@@ -841,23 +930,90 @@ void writeBitFieldMatrix(std::ostream & out, const BitFieldMatrix & bitFieldMatr
 		out << '\n';
 	}
 }
+
+
+
+void CommonInfo::calcEigenSolution() {
+	const double * stateFreqArray = &(this->stateFreqVector[0]);
+	const double ** relRateMatAlias = const_cast<const double **>(this->relRateMat.GetAlias());
+	ScopedDblTwoDMatrix qMat(this->nStates, this->nStates);
+	double ** qMatAlias = qMat.GetAlias();
+	double diagWeightedSum = 0.0;
+	for (unsigned a = 0; a < this->nStates; ++a) {
+		double offDiagSum = 0.0;
+		for (unsigned d = 0; d < this->nStates; ++d) {
+			const double unNormRate = stateFreqArray[d]*relRateMatAlias[a][d];
+			qMatAlias[a][d] = unNormRate;
+			if (a != d)
+				offDiagSum += unNormRate;
+		}
+		qMatAlias[a][a] = -offDiagSum;
+		diagWeightedSum += stateFreqArray[a]*offDiagSum;
+	}
 	
+	for (unsigned a = 0; a < this->nStates; ++a) {
+		for (unsigned d = 0; d < this->nStates; ++d) {
+			qMatAlias[a][d] /= diagWeightedSum;
+		}
+	}
+	
+	setQMatForHandle(this->likeCalcHandle, 0, const_cast<const double **>(qMatAlias));
+    
+    int rc = calc_eigen_mat(dsct_model_obj, 0);
+    if (rc == 0) {
+    	errormsg << "recalc_eigen_mat failed";
+        throw NxsException(errormsg);
+    }
+}
+
+void CommonInfo::readModel(const std::vector<std::string> &optVec) {
+	this->relRateMat.Initialize(this->nStates, this->nStates);
+	for (unsigned a = 0; a < this->nStates; ++a) {
+		for (unsigned d = 0; d < this->nStates; ++d) {
+			this->relRateMat.GetAlias()[a][d] = 1.0;
+		}
+	}
+	this->stateFreqVector.assign(this->nStates, 1.0/this->nStates);
+	
+	calcEigenSolution();
+
+}
+
 int main(int argc, char * argv[]) {
 	/* Usually it is easiest to surround interactions with NCL in a try block
 		that catches NxsException instances.
 		Reading files can certainly generate these errors, but even queries
 		after the parse can result in these exceptions.
 	*/
-	if (argc < 2) {
-		std::cerr << "Expecting one arguments: a file name\n";
-		return 1;
-	}
 	if (argv[1][0] == '-' &&  argv[1][1] == 'h' && argv[1][2] == '\0' ) {
 		std::cerr << "Takes a arguments: The path to a NEXUS file with a single characters block\n";
 		return 0;
 	}
+	std::string filename;
+	std::vector<std::string> optVec;
+	for (int argi = 1; argi < argc; ++argi) {
+		if (strlen(argv[argi]) > 0) {
+			std::string argstr(argv[argi]);
+			if (argstr[0] == '-' && strlen(argv[argi]) > 1) {
+				optVec.push_back(argstr);
+			}
+			else if (filename.empty()) {
+				filename = argstr;
+			}
+			else {
+				std::cerr << "Expecting only one filename argument\n";
+				return 1;
+			}
+		}
+	}
+	
+	
 
-	std::string filename(argv[1]);
+
+	if (filename.empty()) {
+		std::cerr << "Expecting a filename as an argument.\n";
+		return 1;
+	}
 	try {
 		int blocksToRead =	(PublicNexusReader::NEXUS_TAXA_BLOCK_BIT
 							| PublicNexusReader::NEXUS_CHARACTERS_BLOCK_BIT
@@ -900,6 +1056,10 @@ int main(int argc, char * argv[]) {
 		std::string symbols = convertToBitFieldMatrix(*charsBlock, bitFieldMatrix);
 		CommonInfo blob;
 		blob.initialize(symbols);
+
+		blob.readModel(optVec);
+	
+		
 		blob.zeroVec.assign(bitFieldMatrix[0].size(), 0);
 		gBlob = &blob;
 		std::cerr << "from line " << __LINE__ << ":\n" ; writeBitFieldMatrix(std::cerr, bitFieldMatrix);
@@ -919,7 +1079,9 @@ int main(int argc, char * argv[]) {
 				const NxsFullTreeDescription & ftd = treesBlock->GetFullTreeDescription(treeInd);
 				if (ftd.AllEdgesHaveLengths()) {
 					NxsSimpleTree nclTree(ftd, 0, 0.0);
-					calculatePatternClassProbabilities(nclTree, std::cout, JCMulitCatTiMat, blob); //@TEMP JC
+//					calculatePatternClassProbabilities(nclTree, std::cout, JCMulitCatTiMat, blob); //@TEMP JC
+					calculatePatternClassProbabilities(nclTree, std::cout, GenericMulitCatTiMat, blob); //@TEMP JC
+
 					PatternSummary observed;
 					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, std::cout, &observed, blob);
 				}
@@ -942,3 +1104,4 @@ int main(int argc, char * argv[]) {
 	}
 	return 0;
 }
+
