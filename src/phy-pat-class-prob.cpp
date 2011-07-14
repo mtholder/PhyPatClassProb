@@ -27,6 +27,8 @@ struct CommonInfo {
 	unsigned nStates;
 	unsigned nRates;
 	unsigned pVecLen; // nStates * nRates;
+	BitField lastBitField;
+	
 	std::string alphabet;
 	std::vector<BitField> singleStateCodes;
 	// stateIndexToStateCode is probably always going to be identical to
@@ -38,7 +40,7 @@ struct CommonInfo {
 	ScopedDblThreeDMatrix secondMatVec;
 	std::vector<unsigned> zeroVec;
 	std::vector<double> rates;
-	BitField lastBitField;
+	std::vector<double> rateProb;
 	std::vector<double> categStateProb;
 	
 	VMaskToVecMaskPair pairsForIntersectionForEachDownPass;
@@ -61,6 +63,8 @@ struct CommonInfo {
 	std::vector<int> modelIndexVector;
 	long likeCalcHandle;
 	
+	
+		void writeModel(std::ostream & out) const;
 	private:
 		void calcEigenSolution();
 	
@@ -114,16 +118,13 @@ void CommonInfo::initialize(const std::string & symbols) {
 	this->pVecLen = this->nRates*this->nStates;
 	
 	this->rates.assign(this->nRates, 1.0); //@TEMP no rate het
-	this->categStateProb.assign(this->pVecLen, 1.0/((double)this->pVecLen)) ; //@TEMP no rate het //@TEMP JC
+	this->rateProb.assign(this->nRates, 1.0/this->nRates); // @TEMP equally-sized rate categories
+	this->categStateProb.assign(this->pVecLen, 1.0/((double)this->pVecLen)) ;
 	
 	this->singleStateCodes.clear();
 	this->multiStateCodes.clear();
 	this->stateCodesToSymbols.clear();
 	
-	this->firstMatVec.Free();
-	this->firstMatVec.Initialize(this->nRates, this->nStates, this->nStates);
-	this->secondMatVec.Free();
-	this->secondMatVec.Initialize(this->nRates, this->nStates, this->nStates);
 	
 	unsigned lbfU = (1 << this->nStates) - 1;
 	this->stateCodeToNumStates.assign(lbfU + 1, 0);
@@ -227,44 +228,6 @@ void CommonInfo::initialize(const std::string & symbols) {
 	}
 	
 	
-	int numLeaves = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    const double * patternWeights=0L; 
-    int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    int numPartialStructs = 1;  // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    int numInstRateModels = 1 ; // we need a single q-matrix
-    const ASRVObj ** asrvObjectArray=0L;  // we won't use pytbeaglehon's asrv
-    int numProbMats= 2*(this->nRates); // we need a left and right for each rate category
-    int numEigenStorage=1;
-    int numRescalingsMultipliers=0;
-    int resourceIndex=-1;
-    long resourcePref=64;
-    long resourceReq=64;
-    int eigenIndex, numToCalc ;
-    this->dsct_model_obj = 0L;
-    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves, 
-    												    numPatterns,
-    												    patternWeights,
-    												    this->nStates,
-    												    numStateCodeArrays,
-    												    numPartialStructs, 
-    												    numInstRateModels,
-    												    asrvObjectArray,
-    												    numProbMats,
-    												    numEigenStorage,
-    												    numRescalingsMultipliers,
-    												    resourceIndex,
-    												    resourcePref,
-    												    resourceReq);
-
-	if (this->likeCalcHandle < 0) {
-		throw NxsException("Could not initialize a LikelihoodCalcInstance!");
-	}
-	const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(this->likeCalcHandle);
-    if (LCI == 0L) {
-        throw NxsException("Call to getLikeCalculatorInstance failed");
-    }    
-	this->dsct_model_obj = LCI->probModelArray[0];
 }
 
 
@@ -632,7 +595,13 @@ void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 		for (std::vector<BitField>::const_iterator cIt = blob.multiStateCodes.begin(); cIt != blob.multiStateCodes.end(); ++cIt) {
 			BitsToCount::const_iterator queryIt = currPatsMap.find(*cIt);
 			unsigned obsCount = (queryIt == currPatsMap.end() ? 0 : queryIt->second);
-			out << "Observed steps = " << score << " states = " << blob.toSymbol(*cIt) << " count = " << obsCount  << '\n';
+			const unsigned ns = blob.getNumStates(*cIt);
+			if (ns > 1 && (ns - 1) <= score) {
+				out << "Observed steps = " << score << " states = " << blob.toSymbol(*cIt) << " count = " << obsCount  << '\n';
+			}
+			else {
+				assert(obsCount == 0);
+			}
 		}
 	}
 }
@@ -784,8 +753,14 @@ void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) 
 		const std::vector<double> & currFPS = this->probsByStepsThenObsStates[i];
 		for (BitField obsStates= 1; ;++obsStates) {
 			const double p = currFPS[obsStates];
-			out << "Expected steps = " << i << " states = " << blob.toSymbol(obsStates) << " prob = " << p << '\n';
-			totalProb += p;
+			const unsigned ns = blob.getNumStates(obsStates);
+			if (ns > 1 && (ns - 1) <= i) {
+				out << "Expected steps = " << i << " states = " << blob.toSymbol(obsStates) << " prob = " << p << '\n';
+				totalProb += p;
+			}
+			else {
+				assert(p == 0.0);
+			}
 			if (obsStates == blob.lastBitField)
 			 	break;
 		 }
@@ -966,6 +941,27 @@ void CommonInfo::calcEigenSolution() {
     }
 }
 
+std::vector<double> toVecDouble(const std::string &s) {
+	size_t begInd = 0;
+	std::vector<double>	v;
+	for (;;) {
+		size_t endInd = s.find(',', begInd);
+		if (endInd == std::string::npos) {
+			const NxsString n(s.substr(begInd).c_str());
+			v.push_back(n.ConvertToDouble());
+			return v;
+		}
+		else {
+			const NxsString n(s.substr(begInd, endInd).c_str());
+			v.push_back(n.ConvertToDouble());
+			begInd = endInd + 1;
+			if (begInd == s.length()) {
+				throw NxsException("Not expecting a series of numbers to end with a comma.");
+			}
+		}
+	}
+}
+
 void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 	this->relRateMat.Initialize(this->nStates, this->nStates);
 	for (unsigned a = 0; a < this->nStates; ++a) {
@@ -975,8 +971,199 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 	}
 	this->stateFreqVector.assign(this->nStates, 1.0/this->nStates);
 	
+	
+	for (std::vector<std::string>::const_iterator ovIt = optVec.begin(); ovIt != optVec.end(); ++ovIt) {
+		const std::string opt = *ovIt;
+		assert(opt[0] == '-');
+		const char flag = opt[1];
+		const std::string val(opt.c_str() + 2);
+		std::vector<double> v = toVecDouble(val);
+		double x, y;
+		int el = 0;
+		const int numRelRates = (((this->nStates - 1)*(this->nStates))/2) - 1;
+		unsigned i, a, d;
+		switch (flag) {
+			case 'f' :
+				if (v.size() != this->nStates - 1) {
+					errormsg << "Expecting " << this->nStates - 1 << " state frequencies (the last will be obtained by subtraction)\n";
+					throw NxsException(errormsg);
+				}
+				x = 1.0;
+				for (i = 0; i < this->nStates - 1; ++i) {
+					if (v[a] <= 0.0 || v[a] >= 1.0) {
+						throw NxsException("State frequencies must be between 0 and 1");
+					}
+					x -= v[i];
+				}
+				if (x < 0.0) {
+						throw NxsException("The sum of the state frequencies must be less than 1");
+				}
+				
+				v.push_back(x);
+				this->stateFreqVector = v;
+				break;
+			case 'r' :
+				if (v.size() != numRelRates) {
+					errormsg << "Expecting " << numRelRates << " relative rates frequenies (the last will be set to 1.0)\n";
+					throw NxsException(errormsg);
+				}
+				v.push_back(1.0);
+				el = 0;
+				for (a = 0; a < this->nStates; ++a) {
+					for (d = a + 1; d < this->nStates; ++d) {
+						if (v[el] <= 0.0) {
+							throw NxsException("relative rates must be positive");
+						}
+						this->relRateMat.GetAlias()[a][d] = v[el];
+						this->relRateMat.GetAlias()[d][a] = v[el];
+						el++;
+					}
+				}
+				assert(el == 1 + numRelRates);
+				break;
+			case 'm' :
+				this->rates = v;
+				this->nRates = this->rates.size();
+				
+				for (a = 0; a < this->nRates; ++a) {
+					if (v[a] <= 0.0) {
+						throw NxsException("rate multipliers must be positive");
+					}
+				}
+				break;
+			case 'p' :
+				this->rateProb = v;
+				x = 1.0;
+				for (a = 0; a < v.size(); ++a) {
+					if (v[a] <= 0.0 || v[a] >= 1.0) {
+						throw NxsException("rate category probabilities must be between 0 and 1");
+					}
+					x -= v[i];
+				}
+				if (x < 0.0) {
+					throw NxsException("The sum of rate category probabilities must be less than 1");
+				}
+				this->rateProb.push_back(x);
+				break;
+		}
+	}
+	
+	this->nRates = this->rates.size();
+	if (this->nRates != this->rateProb.size()) {
+		throw NxsException("The number of rates and the number of rate category probabilities must agree");
+	}
+
+	this->pVecLen = this->nRates*this->nStates;
+	this->categStateProb.resize(this->pVecLen) ;
+	
+	for (unsigned i = 0; i < this->nRates; ++i) {
+		const double rp = this->rateProb[i];
+		for (unsigned j = 0; j < this->nStates; ++j) {
+			this->categStateProb[i*this->nStates + j] = rp*this->stateFreqVector[j];
+		}
+	}
+	
+	this->writeModel(std::cerr);
+	
+	
+	this->firstMatVec.Free();
+	this->firstMatVec.Initialize(this->nRates, this->nStates, this->nStates);
+	this->secondMatVec.Free();
+	this->secondMatVec.Initialize(this->nRates, this->nStates, this->nStates);
+
+	
+
+	int numLeaves = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    const double * patternWeights=0L; 
+    int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    int numPartialStructs = 1;  // we don't need any, but I'm afraid of using 0 as an arg to beagle
+    int numInstRateModels = 1 ; // we need a single q-matrix
+    const ASRVObj ** asrvObjectArray=0L;  // we won't use pytbeaglehon's asrv
+    int numProbMats= 2*(this->nRates); // we need a left and right for each rate category
+    int numEigenStorage=1;
+    int numRescalingsMultipliers=0;
+    int resourceIndex=-1;
+    long resourcePref=64;
+    long resourceReq=64;
+    int eigenIndex, numToCalc ;
+    this->dsct_model_obj = 0L;
+    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves, 
+    												    numPatterns,
+    												    patternWeights,
+    												    this->nStates,
+    												    numStateCodeArrays,
+    												    numPartialStructs, 
+    												    numInstRateModels,
+    												    asrvObjectArray,
+    												    numProbMats,
+    												    numEigenStorage,
+    												    numRescalingsMultipliers,
+    												    resourceIndex,
+    												    resourcePref,
+    												    resourceReq);
+
+	if (this->likeCalcHandle < 0) {
+		throw NxsException("Could not initialize a LikelihoodCalcInstance!");
+	}
+	const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(this->likeCalcHandle);
+    if (LCI == 0L) {
+        throw NxsException("Call to getLikeCalculatorInstance failed");
+    }    
+	this->dsct_model_obj = LCI->probModelArray[0];
+
+
 	calcEigenSolution();
 
+}
+
+void CommonInfo::writeModel(std::ostream & out) const {
+	int a, d;
+	out << "Model state_freqs = (";
+	for (unsigned i = 0; i < this->nStates; ++i) {
+		out << ' ' << this->stateFreqVector.at(i);
+	}
+	out << ")\n";
+	out << "Model rel_rates = (";
+	for (a = 0; a < this->nStates; ++a) {
+		out << '(';
+		for (d = a + 1; d < this->nStates; ++d)
+			out << ' ' << this->relRateMat.GetAlias()[a][d];
+		out << ") ";
+	}
+	out << ")\n";
+	for (a = 0; a < this->nRates; ++a) {
+		out << "Model rate_multiplier_category" << a << " = (rate=" << this->rates.at(a) << ", prob=" << this->rateProb.at(a) << ")\n";
+	}
+
+	out << "Model_arg -f";
+	for (unsigned i = 0; i < this->nStates; ++i) {
+		if (i > 0)
+			out << ',';
+		out<< this->stateFreqVector.at(i);
+	}
+	out << "\nModel_arg -r";
+	for (a = 0; a < this->nStates - 1; ++a) {
+		for (d = a + 1; d < this->nStates; ++d) {
+			if (d > 1)
+				out << ',';
+			out << this->relRateMat.GetAlias()[a][d];
+		}
+	}
+	out << "\nModel_arg -m";
+	for (a = 0; a < this->nRates; ++a) {
+		if (a > 0)
+			out << ',';
+		out << this->rates.at(a);
+	}
+	out << "\nModel_arg -p";
+	for (a = 0; a < this->nRates; ++a) {
+		if (a > 0)
+			out << ',';
+		out << this->rateProb.at(a);
+	}
+	out << "\n";
+		
 }
 
 int main(int argc, char * argv[]) {
@@ -995,7 +1182,13 @@ int main(int argc, char * argv[]) {
 		if (strlen(argv[argi]) > 0) {
 			std::string argstr(argv[argi]);
 			if (argstr[0] == '-' && strlen(argv[argi]) > 1) {
-				optVec.push_back(argstr);
+				if (strlen(argv[argi]) > 2)
+					optVec.push_back(argstr);
+				else {
+					std::cerr << "Expecting a numerical argument after " << argstr << '\n';
+					return 1;
+				}
+					
 			}
 			else if (filename.empty()) {
 				filename = argstr;
