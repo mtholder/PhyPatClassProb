@@ -8,5 +8,5 @@ node_list.pop(0)
 print(tree.as_string('newick'))
 for nd in node_list:
     if not nd.is_leaf():
-        tree.reroot_at_edge(nd.edge, update_splits=False)
+        tree.reroot_at_node(nd, update_splits=False)
         print(tree.as_string('newick'))
