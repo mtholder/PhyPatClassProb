@@ -20,6 +20,10 @@ parser.add_option("-r", "--rel-rates", dest="rel_rates", default="1.0,1.0,1.0,1.
                   help="comma-separated list of the exchangeability rates relative to G<->T: rAC,rAG,rAT,rCG,rCT")
 parser.add_option("-t", "--tree", dest="tree", default=None,
                   help="Newick tree (with consecutively numbered leaves starting at 1)")
+parser.add_option("-i", "--prop-invar", dest="invar", default=None, type='float',
+                  help="Proportion of invariant sites")
+parser.add_option("-a", "--alpha", dest="alpha", default=None, type='float',
+                  help="Shape parameter of the gamma distribution for gamma-distributed rates across sites")
 parser.add_option("-p", "--paup-file", dest="paup_file", default=None, type='str',
                   help="Optional file name for a NEXUS file that will check the probability calculations")
 
@@ -56,6 +60,23 @@ if min(rel_rates) <= 0.0:
 rAC, rAG, rAT, rCG, rCT = rel_rates
 rGT = 1.0
 
+rates = []
+rate_probs = []
+var_rate_prob = 1.0
+mean_var_rate = 1.0
+if options.invar is not None:
+    if options.invar < 0.0 or options.invar >= 1.0:
+        sys.exit('proportion of invariant sites must be non-negative and less than 1.')
+    var_rate_prob -= options.invar
+    mean_var_rate = 1.0/var_rate_prob
+    rates.append(0.0)
+    rate_probs.append(options.invar)
+if options.alpha is not None:
+    sys.exit('unimplemented')
+else:
+    rate_probs.append(var_rate_prob)
+    rates.append(mean_var_rate)
+    
 if not (options.tree):
     sys.exit('A tree must be specified')
 # Validate the edge length
@@ -73,9 +94,51 @@ if min(inds) != 1:
 if len(set(inds)) != num_tax:
     sys.exit('Newick string should be consecutively numbered leaves starting at 1 (repeated index found)')
 
+num_patterns = 4**num_tax
+states = 'ACGT'
+state_str_list = []
 
+for i in range(num_tax):
+    rep = 4**(num_tax - 1 - i)
+    num_repeats = num_patterns/(4*rep)
+    word = ''.join([state*rep for state in states])
+    row = word*num_repeats
+    state_str_list.append(row)
 
+fn = 'testin.nex'
+sys.stderr.write('Creating/Overwriting %s\n' %  fn)
+o = open(fn, 'w')
 
+o.write('''#NEXUS
+begin paup;
+    log start replace;
+end;
+begin data;
+	dimensions ntax = %(num_tax)d nchar = %(num_pat)d;
+	format datatype = dna;
+	matrix 
+''' % {'num_tax' : num_tax, 'num_pat' : num_patterns})
+
+for i, r in enumerate(state_str_list):
+    o.write('t' + str(1 + i) + '   ')
+    o.write(r)
+    o.write('\n')
+o.write(';\nend;\nbegin trees;\n   tree test = [&U] %s;\nend;\n' % options.tree)
+o.close()
+
+stdo, stde = 'testoutput.txt', 'testerror.txt'
+d = os.path.split(os.path.dirname(os.path.abspath(sys.argv[0])))[0]
+opts = '-f%s -r%s' % (options.base_freq, options.rel_rates)
+if len(rates) > 1:
+    assert(len(rates) == len(rate_probs))
+    opts = opts + ' -m%s -p%s' %(','.join([str(i) for i in rates]), ','.join([str(i) for i in rate_probs[:-1]]))
+    
+
+invoc = '%s %s %s >%s 2>%s' % (os.path.join(d, 'src', 'PhyPatClassProb'), opts, fn, stdo, stde)
+sys.stderr.write('Creating/Overwriting %s and %s by running:\n   %s\n' % (stdo, stde, invoc))
+rc = os.system(invoc)
+if rc != 0:
+    sys.stderr.write('Error! return code = %d\n' % rc)
 sys.exit(0)
 
 

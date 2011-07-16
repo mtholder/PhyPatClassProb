@@ -1187,22 +1187,33 @@ void CommonInfo::writeModel(std::ostream & out) const {
 	out << ");  end;\n";
 }
 
+
+void printHelp(std::ostream & o) {
+	o << "Takes the path to a NEXUS file with a single characters block as an argument\n";
+	o << "\nOptions:\n";
+	o << "   -f#,#,#        state frequencies (last is calculated by subtraction).\n";
+	o << "   -r#,#,#,#,#    relative rates (the last is defined to be 1.0).\n";
+	o << "   -m#,#,#,...    rate multipliers (one for each rate category).\n";
+	o << "   -p#,#,#,...    rate category probabilities (one fewer than the number of rates - the last is calculated by subtraction).\n";
+}
+
+
 int main(int argc, char * argv[]) {
 	/* Usually it is easiest to surround interactions with NCL in a try block
 		that catches NxsException instances.
 		Reading files can certainly generate these errors, but even queries
 		after the parse can result in these exceptions.
 	*/
-	if (argv[1][0] == '-' &&  argv[1][1] == 'h' && argv[1][2] == '\0' ) {
-		std::cerr << "Takes a arguments: The path to a NEXUS file with a single characters block\n";
-		return 0;
-	}
 	std::string filename;
 	std::vector<std::string> optVec;
 	for (int argi = 1; argi < argc; ++argi) {
 		if (strlen(argv[argi]) > 0) {
 			std::string argstr(argv[argi]);
 			if (argstr[0] == '-' && strlen(argv[argi]) > 1) {
+				if (argstr[0] == '-' &&  argstr[1] == 'h' ) {
+					printHelp(std::cerr);
+					return 0;
+				}
 				if (strlen(argv[argi]) > 2)
 					optVec.push_back(argstr);
 				else {
