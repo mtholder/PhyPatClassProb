@@ -941,24 +941,31 @@ void CommonInfo::calcEigenSolution() {
     }
 }
 
-std::vector<double> toVecDouble(const std::string &s) {
-	size_t begInd = 0;
-	std::vector<double>	v;
-	for (;;) {
-		size_t endInd = s.find(',', begInd);
-		if (endInd == std::string::npos) {
-			const NxsString n(s.substr(begInd).c_str());
-			v.push_back(n.ConvertToDouble());
-			return v;
-		}
-		else {
-			const NxsString n(s.substr(begInd, endInd).c_str());
-			v.push_back(n.ConvertToDouble());
-			begInd = endInd + 1;
-			if (begInd == s.length()) {
-				throw NxsException("Not expecting a series of numbers to end with a comma.");
+std::vector<double> toVecDouble(const std::string &s, const char * optName) {
+	try {
+		size_t begInd = 0;
+		std::vector<double>	v;
+		for (;;) {
+			size_t endInd = s.find(',', begInd);
+			if (endInd == std::string::npos) {
+				const NxsString n(s.substr(begInd).c_str());
+				v.push_back(n.ConvertToDouble());
+				return v;
+			}
+			else {
+				const NxsString n(s.substr(begInd, endInd).c_str());
+				v.push_back(n.ConvertToDouble());
+				begInd = endInd + 1;
+				if (begInd == s.length()) {
+					errormsg << "Error parsing " << optName << ": not expecting a series of numbers to end with a comma.";
+					throw NxsException(errormsg);
+				}
 			}
 		}
+	}
+	catch (const NxsString::NxsX_NotANumber &) {
+		errormsg << "Error parsing " << optName << ": expecting a series of comma-seperated numbers.";
+		throw NxsException(errormsg);
 	}
 }
 
@@ -975,13 +982,15 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 	for (std::vector<std::string>::const_iterator ovIt = optVec.begin(); ovIt != optVec.end(); ++ovIt) {
 		const std::string opt = *ovIt;
 		assert(opt[0] == '-');
+		const std::string flagWithDash = opt.substr(0,2);
 		const char flag = opt[1];
 		const std::string val(opt.c_str() + 2);
-		std::vector<double> v = toVecDouble(val);
+		std::vector<double> v = toVecDouble(val, flagWithDash.c_str());
 		double x, y;
 		int el = 0;
 		const int numRelRates = (((this->nStates - 1)*(this->nStates))/2) - 1;
 		unsigned i, a, d;
+		//std::cerr << "flagWithDash = " << flagWithDash << "   val = " << val << '\n';
 		switch (flag) {
 			case 'f' :
 				if (v.size() != this->nStates - 1) {
@@ -1163,7 +1172,19 @@ void CommonInfo::writeModel(std::ostream & out) const {
 		out << this->rateProb.at(a);
 	}
 	out << "\n";
-		
+	
+	
+	out << "[PAUP] begin paup;    lset nst = 6 BaseFreq = (";
+	for (unsigned i = 0; i < this->nStates - 1; ++i) {
+		out << ' ' << this->stateFreqVector.at(i);
+	}
+	out << ") rMat = (";
+	for (a = 0; a < this->nStates - 2; ++a) {
+		for (d = a + 1; d < this->nStates; ++d) {
+			out << ' ' << this->relRateMat.GetAlias()[a][d];
+		}
+	}
+	out << ");  end;\n";
 }
 
 int main(int argc, char * argv[]) {
