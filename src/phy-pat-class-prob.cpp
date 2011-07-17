@@ -989,8 +989,12 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 		double x, y;
 		int el = 0;
 		const int numRelRates = (((this->nStates - 1)*(this->nStates))/2) - 1;
-		unsigned i, a, d;
-		//std::cerr << "flagWithDash = " << flagWithDash << "   val = " << val << '\n';
+		std::cerr << "flagWithDash = " << flagWithDash << "   val = " << val << '\n';
+		std::cerr << "parsedToDoubles v =";
+		for (std::vector<double>::const_iterator vIt = v.begin(); vIt != v.end(); ++vIt) {
+			std::cerr << ' ' << *vIt;
+		}
+		std::cerr << '\n';
 		switch (flag) {
 			case 'f' :
 				if (v.size() != this->nStates - 1) {
@@ -998,8 +1002,8 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 					throw NxsException(errormsg);
 				}
 				x = 1.0;
-				for (i = 0; i < this->nStates - 1; ++i) {
-					if (v[a] <= 0.0 || v[a] >= 1.0) {
+				for (unsigned i = 0; i < this->nStates - 1; ++i) {
+					if (v[i] <= 0.0 || v[i] >= 1.0) {
 						throw NxsException("State frequencies must be between 0 and 1");
 					}
 					x -= v[i];
@@ -1018,8 +1022,8 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 				}
 				v.push_back(1.0);
 				el = 0;
-				for (a = 0; a < this->nStates; ++a) {
-					for (d = a + 1; d < this->nStates; ++d) {
+				for (unsigned a = 0; a < this->nStates; ++a) {
+					for (unsigned d = a + 1; d < this->nStates; ++d) {
 						if (v[el] <= 0.0) {
 							throw NxsException("relative rates must be positive");
 						}
@@ -1034,8 +1038,8 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 				this->rates = v;
 				this->nRates = this->rates.size();
 				
-				for (a = 0; a < this->nRates; ++a) {
-					if (v[a] <= 0.0) {
+				for (unsigned i = 0; i < this->nRates; ++i) {
+					if (v[i] < 0.0) {
 						throw NxsException("rate multipliers must be positive");
 					}
 				}
@@ -1043,8 +1047,8 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 			case 'p' :
 				this->rateProb = v;
 				x = 1.0;
-				for (a = 0; a < v.size(); ++a) {
-					if (v[a] <= 0.0 || v[a] >= 1.0) {
+				for (unsigned i = 0; i < v.size(); ++i) {
+					if (v[i] <= 0.0 || v[i] >= 1.0) {
 						throw NxsException("rate category probabilities must be between 0 and 1");
 					}
 					x -= v[i];
