@@ -53,19 +53,31 @@
 \newcommand{\numObserved}{\ensuremath{s}\xspace}
 \newcommand{\inform}{\ensuremath{I}\xspace}
 \newcommand{\uninform}{\ensuremath{U}\xspace}
+\newcommand{\allStates}{\ensuremath{\mathcal S}\xspace}
+\newcommand{\allStateSets}{\ensuremath{\mathcal G}\xspace}
+\newcommand{\comboSet}{\ensuremath{\mathcal X}\xspace}
 \newcommand{\edgeLengths}{\ensuremath{\bm \nu}\xspace}
 \newcommand{\patProbSym}{\ensuremath{\mathbb P}\xspace}
 \renewcommand{\Pr}{\patProbSym}
-\newcommand{\patProb}[5]{\ensuremath{\patProbSym(#1,#2,#3,#4,#5)}\xspace}
+\newcommand{\patProb}[6]{\ensuremath{\patProbSym\left(#1,#2,#3,#4,#5,#6\right)}\xspace}
+\newcommand{\patProbFull}[7]{\ensuremath{\patProbSym\left(#1,#2,#3,#4,#5,#6,#7\right)}\xspace}
 \newcommand{\patClassSym}{\ensuremath{\mathcal C}\xspace}
 \newcommand{\patClass}[3]{\ensuremath{\patClassSym_{#1,#2,#3}}\xspace}
-\newcommand{\stateOf}[1]{\ensuremath{c(#1)}\xspace}
+\newcommand{\stateOf}[1]{\ensuremath{c\left(#1\right)}\xspace}
+\newcommand{\leftChild}[1]{\ensuremath{a\left(#1\right)}\xspace} % a and b used below without macro
+\newcommand{\rightChild}[1]{\ensuremath{b\left(#1\right)}\xspace}% a and b used below without macro
+\newcommand{\shared}[1]{\ensuremath{r\left(#1\right)}\xspace}
+\newcommand{\numLeaves}[1]{\ensuremath{t\left(#1\right)}\xspace}
+\newcommand{\partitionSet}[0]{\ensuremath{\mathcal P}\xspace}
+\newcommand{\subsetsOfSizeSet}[0]{\ensuremath{\mathcal R}\xspace}
 
+\newcommand{\order}{{\mathcal{O}}}
 \newcommand{\expectation}{{\mathbb{E}}}
 \newcommand{\expect}[1]{\expectation\left[#1\right]}
 \newcommand{\pvalue}{$P$-value\xspace}
 \newcommand{\pvalues}{$P$-values\xspace}
 \newcommand{\myFigLabel}[1]{\stepcounter{myFigCounter} \newcounter{#1} \setcounter{#1}{\value{myFigCounter}} Fig \arabic{#1}}
+\newcommand{\mthNote}[1]{{\color{red}#1}\\}
 
 \newcounter{myFigCounter}
 \begin{document}
@@ -86,22 +98,157 @@ The indexing and notation for referring to the class of patterns is as follows:
 \end{compactitem}
 
 Note that the subscripting of \patClassSym ensures that the classes of interest are mutually exclusive.
-Thus if traverse the tree in post-order (visiting nodes from tips to root), we can calculate probabilities for each possible class of patterns by summing the probabilities of patterns.
+Thus if we traverse the tree in post-order (visiting nodes from tips to root), we can calculate probabilities for each possible class of patterns by summing the probabilities of patterns.
 As with Felsenstein's pruning algorithm \citep{Felsenstein1981a}, we must consider each possible state at each ancestral node.
 In order to combine partial patterns for child nodes into the appropriate class at their parent's node, we must also maintain the set of states in the subtree.
 
-For each node, $n$, we will calculate and store \patProb{i}{j}{k}{m}{n} where:
+For each node, $n$, we will calculate and store \patProb{i}{j}{r}{k}{m}{n} where:
 \begin{compactitem}
 	\item $i$ is \inform  or \uninform,
 	\item $j$ is a set of states observed in the tips of the subtree rooted at node $n$,
+	\item $r$ is the set of states that are observed more than one time in the tips of the subtree rooted at node $n$,
 	\item $k$ is the parsimony length of the subtree rooted at node $n$,
 	\item $m$ is a an ancestral character state (a latent variable in this system, because we do not observe these states).
 \end{compactitem}
-\patProb{i}{j}{k}{m}{n} is defined as
+\patProb{i}{j}{r}{k}{m}{n} is defined as
 \begin{equation}
-	\patProb{i}{j}{k}{m}{n} = \Pr\left(x\in\patClass{i}{|j|}{k}(n) \mid T, \edgeLengths, \theta, \stateOf{n}=m\right)
+	\sum_{r\in\allStateSets}\patProb{i}{j}{r}{k}{m}{n} = \Pr\left(x\in\patClass{i}{|j|}{k}(n) \mid T, \edgeLengths, \theta, \stateOf{n}=m\right)
 \end{equation}
-Where \stateOf{x} denotes the character state of node $n$.
+\mthNote{This should be phrased by indexing $\patClassSym$ by $r$ as well to make a stronger statement.}
+Where \stateOf{x} denotes the character state of node $n$, and \allStateSets denote the set of all possible non-empty sets of states.
+Let \allStates denote the set of all states.
+
+\subsection*{Leaves}
+If node $n$ is a leaf, then the state that it displays will be only member of the set of states seen within the subtree (because there are no other nodes); and the state set will contain this state with probability 1.
+Further we note that single state is a parsimony-uninformative pattern.
+From these properties, we can conclude that for any leaf $n$:
+\begin{eqnarray}
+	\patProb{\uninform}{\{m\}}{\emptyset}{0}{m}{n} = 1 & \forall & m \in \allStates \\
+	\patProb{i}{j}{r}{k}{m}{n} = 0 & & \mbox{otherwise.}
+\end{eqnarray}
+
+\subsection*{Internal nodes}
+Let \leftChild{n} and \rightChild{n} denote the left and right children of node $n$, respectively.
+Then we add probabilities corresponding to all the distinct ways that the class of patterns can be achieved.
+Informally, we can think of  as
+\begin{eqnarray*}
+	&\patProb{i}{j}{r}{k}{m}{n} =  \sum_{[{\bm a}, {\bm b}]\in\comboSet(i, j, r, k)} & \left[\patProb{a_i}{a_j}{a_r}{a_k}{a_m}{a(n)}\Pr(\stateOf{\leftChild{n}}=a_m \mid \edgeLengths,\stateOf{n}=m)\ldots\right. \\
+	 & & \,\left.\patProb{b_i}{b_j}{a_r}{b_k}{b_m}{b(n)}\Pr(\stateOf{\rightChild{n}}=b_m \mid \edgeLengths, \stateOf{n}=m)\right] \forall m \in\allStates
+\end{eqnarray*}
+where $\comboSet(i, j, r, k)$ is the set of all pairs of child index arrays that could result in the index $i,j,r,k,m$ at their parent node, $n$.
+The indices for the children are shown as subscripts; for example, we use $a_i$ for the $i$ index when we are referring to child \leftChild{n}.
+
+Note that the probabilities such as $\Pr(\stateOf{\leftChild{n}}=a_m \mid \edgeLengths,\stateOf{n}=m)$ refer to a transition from the state $m\rightarrow a_m$ across a single edge in the tree. For the sake of brevity this will be denoted $\Pr(a_m|\edgeLengths, m)$
+These probabilities are the same transition probabilities that are typically used in phylogenetics, so these quantities can easily be calculated (in constant time if their is an analytical solution for the model of character evolution and in $\order(K^3)$ time where $K$ is the number of states, $K=|\allStates|$).
+
+We can calculate the probabilities for ancestral nodes by first assigning a probability of 0 to every bin (each \patProb{i}{j}{r}{k}{m}{n} for the internal node $n$).
+Then we must add in the contribution for every combination within $\comboSet(i, j, r, k)$.
+
+Note that the set of states observed in the subtree rooted at node $n$ is simply the union of the corresponding state set in the children, so
+$$	a_j \cup b_j = j $$
+for all $[{\bm a}, {\bm b}]\in\comboSet(i, j, k)$
+
+
+\mthNote{At this point, I remembered that all of the probability statements will have to be indexed by the Fitch downpass state set, as well.  I have not added that to the notation above, but will use $f$ for the Fitch downpass state set of node $n$ (and $a_f$ and $b_f$ for the children's state sets).}
+Also note that (because of the fact that the Fitch algorithm can add at most one state to the tree length for each node), $k$, the tree length below node $n$ will either be the sum of the subtrees, or will be this sum with another count.
+So
+ $$k = a_k + b_k\mbox{ and } d = a_d \cap b_d$$
+ if $a_d \cap b_d \neq \emptyset$, and
+  $$k = a_k + b_k + 1\mbox{ and } d = a_d \cup b_d$$
+ if $a_d \cap b_d = \emptyset$.
+
+While it may seem that the state at the internal node ($m$ above) would affect which elements of $\comboSet(i, j, r, k)$ are valid combinations, this is not the case if we only consider trees in which all of the edges have non-zero length (as is typically done).
+
+
+\subsubsection{Uninformative patterns at internal nodes}
+For $i=\uninform$, each of the contributing index arrays for a child must correspond to an uninformative partial pattern; this is true because a pattern that is informative for a subset of the taxa will automatically be informative for the entire set.
+Recall the a pattern is parsimony-informative it more than 1 state is shared by more than one leaf on the tree.
+So $\patProb{\uninform}{a_j}{a_k}{a_r}{a_m}{a(n)}$ and $\patProb{\uninform}{b_j}{b_k}{b_r}{b_m}{b(n)}$ will contribute to
+$\patProb{\uninform}{j}{r}{k}{m}{n}$ if and only if:
+\begin{eqnarray}
+	|a_j \cap b_j | < 2 \label{maxOneSharedAcrossSubtrees}\\
+	|a_r \cup b_r | < 2. \label{notDifferentStatesSharedAcrossSubtrees}
+\end{eqnarray}
+If inequality (\ref{maxOneSharedAcrossSubtrees}) were not obeyed then there would be states that are seen in each of the subtrees (resulting in a parsimony informative pattern).
+If inequality (\ref{notDifferentStatesSharedAcrossSubtrees}) were not obeyed then each subtree ``contributes'' a distinct state that is shared across multiple leaves, so that character for the entire subtree rooted an $n$ would be a parsimony informative pattern.
+
+The set of shared state for node $n$, is determined by the states shared across its subtrees and any state shared within either subtree. Thus,
+\begin{eqnarray}
+	r = a_r \cup b_r\cup(a_j \cap b_j)
+\end{eqnarray}
+and enforcing $|r| < 2$ will guarantee that inequalities (\ref{maxOneSharedAcrossSubtrees}) and (\ref{notDifferentStatesSharedAcrossSubtrees}) are obeyed.
+
+Finally we note that the parsimony length of the the subtree rooted at $n$ will always be equal to $|j| - 1$ because each of the non-shared states will induce a change along a terminal edge in a parsimony-uninformative data pattern.
+
+\mthNote{here is the first time I correctly inserted the downpass state set in the indexing. I put it right after, $k$, the tree length}
+Thus, while there appear to be five dimensions of bookkeeping that we have to keep track of for uninformative patterns
+
+\begin{table}[htdp]
+\caption{Worst-case size of each dimension in our probability lookup table for any node for uninformative patterns}
+\begin{center}
+\begin{tabular}{|c|c|p{4in}|}
+\hline
+index & dimension & explanation\\
+\hline
+informative index, $i$ & 1 & $i=\uninform$ \\
+obs.\ state set, $j$ & $2^K-1$ & any state set except $\emptyset$\\
+repeated state set, $r$ & K + 1 & $\emptyset$, or a maximum of one state repeated (because $i=\uninform$)\\
+parsimony length, $k$ & 1 & $k=|j| - 1$ when $i=\uninform$  \\
+Fitch down pass, $f$ & $2^{|j|}-1$ & must be a subset of the states observed  \\
+ancestral state, $m$ & K & any possible state could be present at the ancestor \\
+\hline
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}%
+
+This implies memory usage of $\left(2^K-1\right)\left(K^2 + K\right)\left(2^{|j|}-1\right)$ for the uninformative patterns for each internal node.
+Because $|j|$ is on the order of $K$, and the number of internal nodes is $N - 1$, the total memory usage for uninformative patterns is on the order of $\order\left(NK^22^{2K}\right)$
+
+Fortunately, some of the probability bins will always correspond to probabilities of 0, and can thus be skipped. 
+This will save memory, and could save calculation time.
+Namely the size of the observed state set can never exceed the number of leaves below node $n$.  
+So the number of elements in index $j$ will be limited by $2^{\min(K,\numLeaves{n})}-1$ rather than $2^K-1$, where $\numLeaves{n}$ is the number of leaves in the subtree rooted at $n$.
+Similarly, $r$ must be indexed only up to $\min(K,\numLeaves{n}) + 1$.
+For balanced trees, a large number of nodes are shallow (close to the leaves of the tree), so this savings can be substantial.
+
+Furthermore, note that if $r=\emptyset$, then $f=j$ for uninformative patterns; If there has been no shared state, then every traversed node must have resulted in a union in the Fitch algorithm.
+And if $r\neq\emptyset$, then we know that the repeated state found in node $n$ must always be in the node's Fitch downpass set.
+Thus, the indices of $f$ for the of possible bins of probability with non-zero terms is limited by $2^{|j|-1}-1$ rather than $2^{|j|}-1$.
+
+Thus, for an internal node $n$,  we can calculate \patProbFull{\uninform}{j}{r}{k}{d}{m}{n} by setting all of the bins to zero and then calculating the following bins.
+For every $j\in \allStates$ and for every $m\in \allStates$, we must consider the constant-$j$ pattern in the subtree:
+\begin{eqnarray*}
+	\patProbFull{\uninform}{j}{j}{0}{j}{m}{n}= \left(\sum_{a_m\in\allStates}\Pr(a_m|\edgeLengths, m)\patProbFull{\uninform}{j}{J}{0}{j}{a_m}{\leftChild{n}}\right)\left(\sum_{b_m\in\allStates}\Pr(b_m|\edgeLengths, m)\patProbFull{\uninform}{j}{J}{0}{j}{b_m}{\rightChild{n}}\right)
+\end{eqnarray*}
+where $J$ denotes the shared state set $j$ if there are multiple children in the subtree or $\emptyset$ if the child subtree is a leaf.
+
+For any node for which $\numLeaves{n} \leq K$, we must consider cases in which $r = \emptyset$. All of these will have parsimony length of $\numLeaves{n} - 1$. 
+Furthermore this will only happen when the observed state set (and the fitch downpass state set) are subsets of $\allStates$ that have size $\numLeaves{n}$.
+Let $\subsetsOfSizeSet(\allStates, \numLeaves{n})$ denote all of the subsets of $\allStates$ that have a size $\numLeaves{n}$.
+Note that there are $K\choose\numLeaves{n}$ such subsets.
+So for every $m\in \allStates$ and every $j \in \subsetsOfSizeSet(\allStates, \numLeaves{n})$ we must calculate  as:
+\begin{eqnarray*}
+\patProbFull{\uninform}{j}{\emptyset}{\numLeaves{n} - 1}{j}{m}{n} = \sum_{[{a_j}, { b_j}]\in\partitionSet(j,\numLeaves{\leftChild{n}},\numLeaves{\rightChild{n}})}  & & \left[\sum_{a_m\in\allStates} \Pr(a_m|\edgeLengths, m)\patProbFull{\uninform}{a_j}{\emptyset}{0}{a_j}{a_m}{\leftChild{n}}\right] \\
+& \ldots& \left[\sum_{b_m\in \allStates}\Pr(b_m|\edgeLengths, m)\patProbFull{\uninform}{b_j}{\emptyset}{0}{b_j}{b_m}{\rightChild{n}}\right]
+\end{eqnarray*}
+where $\partitionSet(j ,y,z)$ denotes the set of all pairs of sets $a,b$ such that $a \cup b = j$, $a\cap b = \emptyset$, $|a| \geq y$, and $|b| \geq z$.
+
+
+
+
+
+
+
+We use the following rules for which probability ``bins'' in the children contribute to an ancestor's pattern class probabilities:
+
+
+
+
+
+
+
+
 
 
 
