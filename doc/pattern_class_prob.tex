@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage{graphicx}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\usepackage{wrapfig}
+\textwidth = 6.5 in
+\textheight = 9 in
+\oddsidemargin = 0.0 in
+\evensidemargin = 0.0 in
+\topmargin = 0.0 in
+\headheight = 0.0 in
+\headsep = 0.0 in
+\parskip = 0.2in
+\parindent = 0.0in
+\usepackage{setspace}
+\singlespacing
+
+\usepackage{titlesec}
+\usepackage{paralist} %compactenum
+
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{corollary}[theorem]{Corollary}
+%\newtheorem{definition}{Definition}
+\usepackage{tipa}
+\usepackage{bm}
+\usepackage{amsfonts}
+\usepackage[mathscr]{eucal}
+
+\titlespacing*{\section}{0cm}{1mm}{-3mm}
+\titlespacing*{\subsection}{0cm}{-3mm}{-3mm}
+% Use the natbib package for the bibliography
+\usepackage[round]{natbib}
+\bibliographystyle{apalike} 
+\newcommand{\exampleMacro}[1]{\mu_{#1}}
+
+
+\renewcommand{\subsubsection}[1]{%
+\addcontentsline{toc}{subsubsection}{#1}
+\noindent\textbf{#1}:}
+
+
+\usepackage{xspace}
+%\usepackage{ulem}
+\usepackage{url}
+%\usepackage{ensuremath}
+\usepackage{hyperref}
+
+
+\hypersetup{backref,  pdfpagemode=FullScreen,  linkcolor=blue, citecolor=red, colorlinks=true, hyperindex=true}
+
+
+\newcommand{\treeRoot}{\ensuremath{\rho}\xspace}
+\newcommand{\parsLength}{\ensuremath{\ell}\xspace}
+\newcommand{\numObserved}{\ensuremath{s}\xspace}
+\newcommand{\inform}{\ensuremath{I}\xspace}
+\newcommand{\uninform}{\ensuremath{U}\xspace}
+\newcommand{\edgeLengths}{\ensuremath{\bm \nu}\xspace}
+\newcommand{\patProbSym}{\ensuremath{\mathbb P}\xspace}
+\renewcommand{\Pr}{\patProbSym}
+\newcommand{\patProb}[5]{\ensuremath{\patProbSym(#1,#2,#3,#4,#5)}\xspace}
+\newcommand{\patClassSym}{\ensuremath{\mathcal C}\xspace}
+\newcommand{\patClass}[3]{\ensuremath{\patClassSym_{#1,#2,#3}}\xspace}
+\newcommand{\stateOf}[1]{\ensuremath{c(#1)}\xspace}
+
+\newcommand{\expectation}{{\mathbb{E}}}
+\newcommand{\expect}[1]{\expectation\left[#1\right]}
+\newcommand{\pvalue}{$P$-value\xspace}
+\newcommand{\pvalues}{$P$-values\xspace}
+\newcommand{\myFigLabel}[1]{\stepcounter{myFigCounter} \newcounter{#1} \setcounter{#1}{\value{myFigCounter}} Fig \arabic{#1}}
+
+\newcounter{myFigCounter}
+\begin{document}
+\section*{Calculating the probability of classes of data pattern}
+Given:
+\begin{compactitem}
+	\item a bifurcating (``binary'') tree, $T$, with root node (vertex) denoted \treeRoot,
+	\item with a set of edge lengths, \edgeLengths, defined (not to be estimated), and
+	\item  a fully parameterized model of character state change (parameters of the model $\bm\theta$ are fixed),
+\end{compactitem}
+we would like to be able to calculate the probability of events such as: $\Pr(x\in\patClass{\inform}{\numObserved}{\parsLength}(\treeRoot) \mid T, \edgeLengths, \theta)$ where $x$ refers to a character (a column in a taxa by characters data matrix) and \patClassSym refers to a class of possible data patterns.
+The indexing and notation for referring to the class of patterns is as follows:
+\begin{compactitem}
+	\item argument in parentheses: a node. All subscripts described below refer to properties of the subtree rooted at this node;
+	\item first subscript: \inform for parsimony-informative or \uninform for parsimony-uninformative;
+	\item second subscript: the number of states observed in tips that are descendants of this node;
+	\item third subscript: the parsimony length of the subtree rooted at the node.
+\end{compactitem}
+
+Note that the subscripting of \patClassSym ensures that the classes of interest are mutually exclusive.
+Thus if traverse the tree in post-order (visiting nodes from tips to root), we can calculate probabilities for each possible class of patterns by summing the probabilities of patterns.
+As with Felsenstein's pruning algorithm \citep{Felsenstein1981a}, we must consider each possible state at each ancestral node.
+In order to combine partial patterns for child nodes into the appropriate class at their parent's node, we must also maintain the set of states in the subtree.
+
+For each node, $n$, we will calculate and store \patProb{i}{j}{k}{m}{n} where:
+\begin{compactitem}
+	\item $i$ is \inform  or \uninform,
+	\item $j$ is a set of states observed in the tips of the subtree rooted at node $n$,
+	\item $k$ is the parsimony length of the subtree rooted at node $n$,
+	\item $m$ is a an ancestral character state (a latent variable in this system, because we do not observe these states).
+\end{compactitem}
+\patProb{i}{j}{k}{m}{n} is defined as
+\begin{equation}
+	\patProb{i}{j}{k}{m}{n} = \Pr\left(x\in\patClass{i}{|j|}{k}(n) \mid T, \edgeLengths, \theta, \stateOf{n}=m\right)
+\end{equation}
+Where \stateOf{x} denotes the character state of node $n$.
+
+
+
+
+
+\section*{{\color{red}Future work - notes below here are not in a finished state}}
+\subsection*{Patterns that support a branch.}
+Here we consider the following problem: what is the probability of generating a pattern that is shorter on $T_1$ than on $T_{e2}$ or $T_{e3}$ where $T_{e2}$ and $T_{e3}$ are the two distinct tree topologies that are NNI neighbors of tree $T_1$ but do not contain edge $e$.
+Such a character would ``support'' edge $e$.
+The set of such patterns will be denoted $\mathcal{S}$.
+
+Note that we are not guaranteeting that all (or even that {\em any}) minimal-length trees  for the character contain edge $e$. 
+Rather we are assessing a form of local support in which we consider the rest of the tree to be provisionally correct, and are interested in how many characters vary in length across the edge.
+
+
+Let $\ell_i$ be the length of the character on tree $i$ across the 5 edges of interest (all edges adjacent to the nodes connected by $e$).
+
+Without loss of generality, we will root the tree, $T_1$ across the edge of interest.
+The subtrees of $T_1$ will be $((a,b),(c,d))$. The subtrees of $T_2$ will be $((a,c),(b,d))$; The subtrees of $T_3$ will be arranged $((a,d),(b,c))$
+
+
+
+
+Note that $\ell_i \in \{0, 1, 2, 3\}$ because there are three Fitch down-pass nodes considered when sweeping over this part of the tree (thus there can be a maximum of 3 steps added because of the configuration of $a,b,c,d$.
+We will prove that, for all patterns in $\mathcal{S}$
+\begin{compactenum}
+	\item  $\ell_1 \neq 0$  (intersections present between all four subtrees $\rightarrow \ell_i = 1 \forall i$
+	\item  $\ell_1 \neq 2$
+	\item  $\ell_1 \neq 3$ ( $\ell_2 \leq 3$ and $\ell_3 \leq 3$, so if $\ell_1=3$ then the character cannot be shorter on $T_1$
+\end{compactenum}
+
+\bibliography{phylo}
+\end{document}
+
