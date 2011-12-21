@@ -569,18 +569,18 @@ void GenericMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
     }
     
 }
-unsigned PatternSummary::incrementCount(unsigned s, BitField m) {
+unsigned PatternSummary::incrementCount(unsigned s, BitField m, unsigned toAdd) {
 	if (s >= this->byParsScore.size())
 		this->byParsScore.resize(s + 1);
 	BitsToCount & mapper = this->byParsScore[s];
 	BitsToCount::iterator mIt = mapper.find(m);
 	if (mIt == mapper.end()) {
-		mapper[m] = 1;
-		return 1;
+		mapper[m] = toAdd;
+		return toAdd;
 	}
 	unsigned prev = mIt->second;
-	mIt->second = 1 + prev;
-	return 1 + prev;
+	mIt->second = toAdd + prev;
+	return toAdd + prev;
 }
 		
 void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
@@ -768,7 +768,13 @@ void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) 
 	out << "totalprob = " << totalProb << '\n';
 }
 
-void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &mat, std::ostream & out, PatternSummary *summary, const CommonInfo & blob) {
+void classifyObservedDataIntoClasses(
+		const NxsSimpleTree & tree,
+		const BitFieldMatrix &mat,
+		const int * pwPtr, 
+		std::ostream & out,
+		PatternSummary *summary,
+		const CommonInfo & blob) {
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
 	NodeIDToParsInfo nodeIDToParsInfo;
 	const ParsInfo * rootParsInfo = 0L;
@@ -817,7 +823,8 @@ void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldM
 	if (summary) {
 		summary->clear();
 		for (unsigned p = 0; p < rootParsInfo->size(); ++p) {
-			summary->incrementCount(rootParsInfo->score[p], rootParsInfo->allSeen[p]);
+			unsigned toAdd = (pwPtr != 0L ? (unsigned)pwPtr[p] : 1);
+			summary->incrementCount(rootParsInfo->score[p], rootParsInfo->allSeen[p], toAdd);
 		}
 		summary->write(std::cout, blob);
 	}
@@ -1281,6 +1288,10 @@ int main(int argc, char * argv[]) {
 		}
 		NCL_COULD_BE_CONST	NxsCharactersBlock * charsBlock = nexusReader.GetCharactersBlock(taxaBlock, 0);
 		assert(charsBlock);
+		
+		const NxsTransformationManager &tm = charsBlock->GetNxsTransformationManagerRef();
+		std::vector<int> patternWeights = tm.GetDefaultIntWeights();
+		const int * pwPtr = (patternWeights.empty() ? 0L : &patternWeights[0]);
 		BitFieldMatrix bitFieldMatrix;
 		std::string symbols = convertToBitFieldMatrix(*charsBlock, bitFieldMatrix);
 		CommonInfo blob;
@@ -1312,7 +1323,7 @@ int main(int argc, char * argv[]) {
 					calculatePatternClassProbabilities(nclTree, std::cout, GenericMulitCatTiMat, blob); //@TEMP JC
 
 					PatternSummary observed;
-					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, std::cout, &observed, blob);
+					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, pwPtr, std::cout, &observed, blob);
 				}
 				else {
 					std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";

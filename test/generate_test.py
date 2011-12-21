@@ -9,7 +9,7 @@ import re
 usage='''Creates a data set for testing PhyPatClassProb
 Example:
 
-python generate_test.py  -f.3,.4,.1 -r1.1,2,1.5,.8,3 -e0.2
+python generate_test.py  -f.3,.4,.1 -r1.1,2,1.5,.8,3
 
 
 '''
@@ -23,7 +23,9 @@ parser.add_option("-t", "--tree", dest="tree", default=None,
 parser.add_option("-i", "--prop-invar", dest="invar", default=None, type='float',
                   help="Proportion of invariant sites")
 parser.add_option("-a", "--alpha", dest="alpha", default=None, type='float',
-                  help="Shape parameter of the gamma distribution for gamma-distributed rates across sites")
+                  help="Shape parameter of the gamma distribution for gamma-distributed rates across sites (no rate gamma rate het is used if this is not specified)")
+parser.add_option("-c", "--num-var-cat", dest="n_var_cat", default=4, type='int',
+                  help="The number of discrete categories used to approximate the gamma-distributed rates.")
 parser.add_option("-p", "--paup-file", dest="paup_file", default=None, type='str',
                   help="Optional file name for a NEXUS file that will check the probability calculations")
 
@@ -72,7 +74,20 @@ if options.invar is not None:
     rates.append(0.0)
     rate_probs.append(options.invar)
 if options.alpha is not None:
-    sys.exit('unimplemented')
+    if options.alpha <= 0.0:
+        sys.exit('alpha most be a positive value')
+    if options.n_var_cat < 2:
+        sys.exit('num-var-cat must be > 1')
+    try:
+        from pytbeaglehon.asrv import GammaRateHetManager
+    except:
+        sys.exit('pytbeaglehon must be import-able (installed or on your PYTHONPATH variable)')
+    grh = GammaRateHetManager(shape=options.alpha, num_categories=options.n_var_cat)
+    raw_rates = grh.rates
+    final_rates = [mean_var_rate*i for i in raw_rates]
+    rates.extend(final_rates)
+    rate_cat_probs = [var_rate_prob/options.n_var_cat] * options.n_var_cat
+    rate_probs.extend(rate_cat_probs)
 else:
     rate_probs.append(var_rate_prob)
     rates.append(mean_var_rate)

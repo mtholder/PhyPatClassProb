@@ -163,7 +163,7 @@ class PatternSummary {
 		void clear() {
 			this->byParsScore.clear();
 		}
-		unsigned incrementCount(unsigned s, BitField m);
+		unsigned incrementCount(unsigned s, BitField m, unsigned toAdd);
 		
 		void write(std::ostream & out, const CommonInfo &) const;
 		
@@ -174,7 +174,7 @@ class PatternSummary {
 };
 
 void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, const CommonInfo &);
-void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &, std::ostream & out, PatternSummary *, const CommonInfo &);
+void classifyObservedDataIntoClasses(const NxsSimpleTree & tree, const BitFieldMatrix &, const int * patWtPtr, std::ostream & out, PatternSummary *, const CommonInfo &);
 std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatrix & mat, const std::set<unsigned> * toInclude=0L);
 void writeBitFieldMatrix(std::ostream & out, const BitFieldMatrix & bitFieldMatrix);
 
