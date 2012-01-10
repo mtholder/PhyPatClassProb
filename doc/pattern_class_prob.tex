@@ -97,29 +97,23 @@ Given:
 	\item with a set of edge lengths, \edgeLengths, defined (not to be estimated), and
 	\item  a fully parameterized model of character state change (parameters of the model $\bm\theta$ are fixed, and do not need to be estimated),
 \end{compactitem}
-we would like to be able to calculate the probability of events such as: $\Pr(x\in\patClass{i}{j}{k}(n) \mid T, \edgeLengths, \theta)$ where $x$ refers to a character (a column in a taxa by characters data matrix) and \patClassSym refers to a class of possible data patterns.
+we would like to be able to calculate the probability of events such as: $\Pr(x\in\patClass{i}{j}{k}(n) \mid T, \edgeLengths, \theta)$ where $x$ refers to a randomly selected character (a column in a taxa by characters data matrix) and \patClassSym refers to a class of possible data patterns.
 The indexing and notation for referring to the class of patterns is as follows:
 \begin{compactitem}
 	\item argument in parentheses, $n$: a node. All subscripts described below refer to properties of the subtree rooted at this node;
-	\item first subscript, $i$: \inform for parsimony-informative or \uninform for parsimony-uninformative;
+	\item first subscript, $i$ indicates whether the character is ``parsimony-informative'' when restricted to the subtree rooted at node $n$. \inform for parsimony-informative or \uninform for parsimony-uninformative;
 	\item second subscript, $j$: the set of states observed in tips that are descendants of this node;
 	\item third subscript, $k$: the parsimony length of the subtree rooted at the node.
 \end{compactitem}
-For the sake of brevity this probability will be written as $\Pr(x\in\patClass{i}{j}{k}(\treeRoot))$ with the dependence on  $T, \edgeLengths,$ and $\theta$ implied.
+For the sake of brevity, this probability will be written as $\Pr(x\in\patClass{i}{j}{k}(\treeRoot))$ with the dependence on  $T, \edgeLengths,$ and $\theta$ implied.
 
 We will demonstrate that we can calculate this probability in an algorithm that scales XXX with respect to $\numLeavesTotal$, the number of leaves in the tree and exponentially with respect to $\numStates$ the number of character states possible in each column.
 
 
-For parsimony-uninformative patterns, $\Pr(x\in\patClass{\uninform}{j}{|j|-1}(\treeRoot))$ can be calculated as:
-\begin{eqnarray}
-   \sum_{m\in\allStates}\probUninformPatClass{j}{\emptyset}{j}{m}{\treeRoot}\Pr(m|\theta) && 	\forall j \in  \subsetsOfSizeSet{\allStates}{\numLeavesTotal}{\numStates} \mbox{ if } N = |j|  \label{noRepeatedStates}\\
-  \sum_{r\in j}\sum_{f\in\subsetsOfSizeSet{\allStates-r}{0}{\numLeavesTotal-1}}\sum_{m\in\allStates}\probUninformPatClass{j}{\{r\}}{r\cup f}{m}{\treeRoot}\Pr(m|\theta)  &&  \mbox{ if } N > |j| \mbox{ and }\forall j \in  \subsetsOfSizeSet{\allStates}{1}{\numLeavesTotal-1}\label{oneRepeatedState}\\
-  0 && \mbox{ for all other } j \mbox{}
-\end{eqnarray}
-
-where
+For parsimony-uninformative patterns, $\Pr(x\in\patClass{\uninform}{j}{|j|-1}(\treeRoot))$ can be calculated from a lookup table, $\probUninformPatClassSym$, of probabilities associated with uninformative patterns.
+For each node in the tree:
 \begin{compactitem}
-	\item $\probUninformPatClass{j}{r}{f}{m}{n}$ is the probability that the character will be a parsimony-uninformative pattern for the subtree rooted an $n$ with:
+	\item $\probUninformPatClass{j}{r}{f}{m}{n}$ is the probability of a parsimony-uninformative pattern for the subtree rooted an $n$ with:
 		\begin{compactitem}
 			\item the set $j$ of states observed at the tips of the subtree,
 			\item the set $r$ of states observed in more than one tip in the subtree,
@@ -127,15 +121,29 @@ where
 			\item ancestral state of $m$ at node $n$.
 		\end{compactitem}
 		Although \probUninformPatClassSym is a probability conditioned on $T, \edgeLengths,$ and $\theta$ this dependence is dropped from the notation for the sake of brevity.
+		This probability statement could be verbalized as ``the probability that the subtree rooted at $n$ would display an uninformative data patterns with the state set $j$ at the tips, in which only states in $r$ are seen in multiple tips and for which the Fitch down-pass state set at $n$ would be set $f$ conditional on the fact that the ancestor at node $n$ had state $m$.''
+\end{compactitem}
+If we introduce some more notation:
+\begin{compactitem}
 	\item $\Pr(m|\theta)$ is the prior probability of state $m$ given the model parameters.
 	\item \allStates denotes the set of all states.
 	\item $\subsetsOfSizeSet{\mathcal{Z}}{x}{y}$ denotes the set of all subsets of ${\mathcal Z}$ which have sizes in $[x,y]$
 \end{compactitem}
+then we can calculate $\Pr(x\in\patClass{\uninform}{j}{|j|-1}(\treeRoot))$ by summing the following terms:
+\begin{eqnarray}
+   \sum_{m\in\allStates}\probUninformPatClass{j}{\emptyset}{j}{m}{\treeRoot}\Pr(m|\theta) && 	\forall j \in  \subsetsOfSizeSet{\allStates}{\numLeavesTotal}{\numStates} \mbox{ if } N = |j|  \label{noRepeatedStates}\\
+  \sum_{r\in j}\sum_{f\in\subsetsOfSizeSet{\allStates-r}{0}{\numLeavesTotal-1}}\sum_{m\in\allStates}\probUninformPatClass{j}{\{r\}}{r\cup f}{m}{\treeRoot}\Pr(m|\theta)  &&  \mbox{ if } N > |j| \mbox{ and }\forall j \in  \subsetsOfSizeSet{\allStates}{1}{\numLeavesTotal-1}\label{oneRepeatedState}\\
+  0 && \mbox{ for all other } j \mbox{}
+\end{eqnarray}
+
 
 Formula (\ref{noRepeatedStates}) covers parsimony-uninformative cases in which no state is repeated on the tree (this only occurs when $\numLeavesTotal\leq\numStates$).
 Formula (\ref{oneRepeatedState}) covers parsimony-uninformative cases in which one state is repeated on the tree.
 It is impossible to have a parsimony-uninformative pattern in with more than one state that is shared by multiple tips.
 Note that in all cases, the non-zero probabilities are only obtained when the parsimony-length of the tree is equal to the minimum possible length ($|j| - 1$), as is required by a parsimony-uninformative character.
+
+Below we will discuss how the $\probUninformPatClassSym$ lookup table can be calculated for each node.
+The calculations are performed on a post-order traversal of the tree.
 
 \subsection{Recursive calculations for the probability of patterns}
 \subsubsection{Leaves}
@@ -160,7 +168,7 @@ Note that
 	j & = &  a_j \cup b_j \\
 	r & = & a_r \cup b_r\cup(a_j \cap b_j)\\
 	f & = & \left\{\begin{array}{cl}
-				a_f \cup b_f & \mbox{if } a_f \cup b_f =\emptyset \\
+				a_f \cup b_f & \mbox{if } a_f \cap b_f =\emptyset \\
 				a_f \cap b_f & \mbox{otherwise}
 		  \end{array}\right.
 \end{eqnarray}
@@ -171,7 +179,7 @@ Thus $|r| < 2$ for all parsimony-uninformative patterns.
 
 \subsubsection{Unoptimized, worst-case Uninformative data pattern calculations}
 \begin{table}[htdp]
-\caption{Worst-case size of each dimension in our probability lookup table for any node for uninformative patterns}
+\caption{Worst-case size of each dimension in our probability lookup table for any node for uninformative patterns}\label{unoptUninform}
 \begin{center}
 \begin{tabular}{|c|c|p{4in}|}
 \hline
@@ -188,7 +196,7 @@ ancestral state, $m$ & K & any possible state could be present at the ancestor \
 \label{default}
 \end{table}%
 
-This implies memory usage of $\left(2^K-1\right)\left(K^2 + K\right)\left(2^{|j|}-1\right)$ for the uninformative patterns for each internal node.
+The indexing of $\probUninformPatClassSym$ implies memory usage of $\left(2^K-1\right)\left(K^2 + K\right)\left(2^{|j|}-1\right)$ for the uninformative patterns for each internal node (see table \ref{unoptUninform}).
 Because $|j|$ is on the order of $K$, and the number of internal nodes is $N - 1$, the total memory usage for uninformative patterns is on the order of $\order\left(NK^22^{2K}\right)$
 
 Fortunately, some of the probability bins will always correspond to probabilities of 0, and can thus be skipped. 
