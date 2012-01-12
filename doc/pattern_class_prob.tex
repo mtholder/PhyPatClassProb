@@ -285,10 +285,20 @@ Thus:
 \mbox{ where }r & =&  \{s\}   \nonumber \\
 q &  = & r \cup y - b_j\\
 a_w & = & z-b_j\\
-\probUninformPatClass{r\cup y }{r}{r\cup z}{m}{n} &= & \sum_{b_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{q}{r}{a_w\cup r } \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
+\probUninformPatClass{r\cup y }{r}{r\cup z}{m}{n} &+= & \sum_{b_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{q}{r}{a_w\cup r } \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
 \mbox{ summing over all } b_j & \in & \subsetsOfSizeSet{z}{\numLeaves{\rightChild{n}}}{\numLeaves{\rightChild{n}}} \\
 \end{eqnarray*}
 
+The use of $+=$ here is a reminder that the calculations must be summed over this scenario and another in which the repeated state is found in the right subtree.
+
+\subsubsection{Parsimony-uninformative, no repeated states}
+In no state in the subtree is repeated then:
+\begin{eqnarray*}
+\mbox{for all } j & \in & \subsetsOfSizeSet{\allStates}{\numLeaves{n}}{\numLeaves{n}}\\
+\mbox{let } b_j & = & j - a_j \\
+\probUninformPatClass{j}{\emptyset}{j}{m}{n} &= & \sum_{a_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{a_j}{\emptyset}{a_j} \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
+\mbox{ summing over all } a_j & \in & \subsetsOfSizeSet{j}{\numLeaves{\leftChild{n}}}{\numLeaves{\leftChild{n}}} \\
+\end{eqnarray*}
 
 
 
