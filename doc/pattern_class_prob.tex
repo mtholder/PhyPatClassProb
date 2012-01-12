@@ -72,7 +72,7 @@
 \newcommand{\shared}[1]{\ensuremath{r\left(#1\right)}\xspace}
 \newcommand{\numLeaves}[1]{\ensuremath{t\left(#1\right)}\xspace}
 \newcommand{\partitionSet}[0]{\ensuremath{\mathcal P}\xspace}
-\newcommand{\subsetsOfSizeSet}[3]{\ensuremath{\mathcal R}\left(#1,#2,#3\right)\xspace}
+\newcommand{\subsetsOfSizeSet}[3]{\ensuremath{\mathcal R}\left(#1,\left[#2,#3\right]\right)\xspace}
 
 \newcommand{\order}{{\mathcal{O}}}
 \newcommand{\expectation}{{\mathbb{E}}}
@@ -203,15 +203,14 @@ Fortunately, some of the probability bins will always correspond to probabilitie
 This will save memory, and could save calculation time.
 Namely the size of the observed state set can never exceed the number of leaves below node $n$.  
 So the number of elements in index $j$ will be limited by $2^{\min(K,\numLeaves{n})}-1$ rather than $2^K-1$, where $\numLeaves{n}$ is the number of leaves in the subtree rooted at $n$.
-Similarly, $r$ must be indexed only up to $\min(K,\numLeaves{n}) + 1$.
 For balanced trees, a large number of nodes are shallow (close to the leaves of the tree), so this savings can be substantial.
 
-Furthermore, note that if $r=\emptyset$, then $f=j$ for uninformative patterns; If there has been no shared state, then every traversed node must have resulted in a union in the Fitch algorithm.
+If $r=\emptyset$, then $f=j$ for uninformative patterns.
+This is true, because, if there has been no shared state, then every traversed node must have resulted in a union in the Fitch algorithm.
 And if $r\neq\emptyset$, then we know that the repeated state found in node $n$ must always be in the node's Fitch downpass set.
 Thus, the indices of $f$ for the of possible bins of probability with non-zero terms is limited by $2^{|j|-1}-1$ rather than $2^{|j|}-1$.
 
 Thus, for an internal node $n$,  we can calculate \probUninformPatClass{j}{r}{f}{m}{n} by setting all of the bins to zero and then replacing 0 with the results of the calculations shown below; in other words, all combinations of indices not mentioned below will have probability of 0.0.
-
 We will use the $\FelsensteinPruneSym$ to denote use of a pruning calculation for a single child lineage for uninformative patterns:
 \begin{eqnarray}
 	\FelsensteinPruneUninform{n}{m}{a_j}{a_r}{a_f} = \Pr(a_m|\edgeLengths, m)\probUninformPatClass{a_j}{a_r}{a_f}{a_m}{\leftChild{n}}
@@ -233,7 +232,7 @@ Note that there will be $\numStates\choose\numLeaves{n}$ distinct sets that coul
 
 \subsubsection{Parsimony-uninformative, repeated state}
 For all internal nodes, there is some probability of a parsimony-uninformative pattern in which a state is observed in multiple leaves.
-If $s$ represents the repeated state ($r=\{s\}$) then $s\in \allStates$, there are potentially many sets of ``other'' (non $s$) states observed: $o\in\subsetsOfSizeSet{\allStates-s}{\numLeaves{n}-2}{\numLeaves{n}-2}$.
+If $s$ represents the repeated state ($r=\{s\}$) then $s\in \allStates$, there are potentially many sets of ``other'' (non $s$) states observed: $o\in\subsetsOfSizeSet{\allStates-s}{0}{\numLeaves{n}-2}$.
 
 
 \subsubsection{Parsimony-uninformative, repeated state, downpass set of size 1}
@@ -245,15 +244,67 @@ Once we know $o$ and $a_o$, then we know that $b_o = o - a_o$.
 Finally we must consider all possible downpass state sets for $\leftChild{n}$ and $\rightChild{n}$.
 $s$ must be a member of the downpass states set (because it is present, and no other state is repeated).
 If $a_{p}$ denotes the set of states other than $s$ that are in the downpass state set of $\leftChild{n}$, then we must consider every 
-$a_p\in\subsetsOfSizeSet{a_o}{0}{\numLeaves{\leftChild{n}}-1}$ and every $b_p\in\subsetsOfSizeSet{b_o}{0}{\numLeaves{\rightChild{n}}-1}$
-
-Thus, $\forall s\in \allStates, \forall o\in\subsetsOfSizeSet{\allStates-s}{\numLeaves{n}-2}{\numLeaves{n}-2}$:
-\begin{eqnarray}
+$a_p\in\subsetsOfSizeSet{a_o}{0}{\numLeaves{\leftChild{n}}-1}$ and every $b_p\in\subsetsOfSizeSet{b_o}{0}{\numLeaves{\rightChild{n}}-1}$. 
+Thus :
+\begin{eqnarray*}
+\mbox{for all } s & \in &  \allStates\\
+\mbox{and any } o & \in &  \subsetsOfSizeSet{\allStates-s}{0}{\numLeaves{n}-2}\\
 \mbox{let }r & =&  \{s\}   \nonumber \\
-\probUninformPatClass{r\cup o}{r}{r}{m}{n} &= & \sum_{a_o}\left[\sum_{a_p}\FelsensteinPruneUninform{\leftChild{n}}{m}{a_o\cup r}{A_R}{a_o\cup r } \right]\left[\sum_{b_p}\FelsensteinPruneUninform{\rightChild{n}}{m}{b_o\cup r}{B_R}{b_o\cup r } \right]\nonumber
-\end{eqnarray}
-Where $A_R$ is either the empty set if $|a_o| + 1 = \numLeaves{\leftChild{n}}$ or $\{s\}$ if $|a_o| + 1 < \numLeaves{\leftChild{n}}$. $B_R$ is defined similarly for the right child.
+\mbox{ and } b_o & = & o - a_o \\
+\probUninformPatClass{r\cup o}{r}{r}{m}{n} &= & \sum_{a_o}\left[\sum_{a_p}\FelsensteinPruneUninform{\leftChild{n}}{m}{a_o\cup r}{A_R}{a_p\cup r} \right]\left[\sum_{b_p}\FelsensteinPruneUninform{\rightChild{n}}{m}{b_o\cup r}{B_R}{b_p \cup r} \right]\nonumber\\
+\mbox{where we sum for all } a_o & \in &  \subsetsOfSizeSet{o}{0}{\numLeaves{\leftChild{n}}-1},\\
+ a_p & \in &  \subsetsOfSizeSet{a_o}{0}{\numLeaves{\leftChild{n}}-1}, \mbox{ and}\\
+ b_p & \in &  \subsetsOfSizeSet{b_o}{0}{\numLeaves{\rightChild{n}}-1}.\\
+\end{eqnarray*}
+Where: 
+\begin{eqnarray*} 
+	A_R & = & \left\{\begin{array}{ll}
+		\emptyset &  \mbox{if } |a_o| + 1 = \numLeaves{\leftChild{n}}\\
+		\{s\} &  \mbox{if } |a_o| + 1 < \numLeaves{\leftChild{n}}.
+	\end{array} \right.
+\end{eqnarray*} 
+$B_R$ is defined similarly for the right child.
 
+
+\subsubsection{Parsimony-uninformative, repeated state, downpass set of size $> 1$}
+If no state is shared among the left and right children of $n$, then the downpass state set at $n$ will be the union of these children's down pass sets.
+This can occur if there are no repeated state sets, or if one state ($s$ below) is repeated in just one of the child-subtrees.
+First we will consider the case in which there is a state that is repeated in one of the subtrees.
+
+We can focus on the case in which the left child is the contributor of the repeated state, the formula for the case in which the repeated state is in the right subtree can be obtained using similar arguments.
+In addition to the repeated state, another set of states ($y$ below) can be found in the tree.
+Only if $\numLeaves{\rightChild{n}} < \numStates - 1$ can there be a scenario in which only the left subtree has the repeated state.
+In this case, the size of the right subtree's downpass set will be equal to the number of tips in that subtree; and the right subtrees downpass state set will be the entire set of states seen in the right subtree ($b_j$ below).
+Other than the repeated state, the left subtree can contain ``singletons'' of other states as long as they are not shared with the right subtree; below we let $q$ denote the set of states seen exactly once in the left subtree and not in the right subtree.
+A subset of $q$ (which we'll call $a_w$) can be found in the downpass set of the left child of $n$.
+Thus:
+\begin{eqnarray*}
+\mbox{for all } s & \in &  \allStates\\
+\mbox{any } y & \in &  \subsetsOfSizeSet{\allStates-s}{\numLeaves{\rightChild{n}}}{\numLeaves{n} - 2}\\
+\mbox{any } z & \in &  \subsetsOfSizeSet{y}{\numLeaves{\rightChild{n}}}{\numLeaves{n} - 2}\\
+\mbox{ where }r & =&  \{s\}   \nonumber \\
+q &  = & r \cup y - b_j\\
+a_w & = & z-b_j\\
+\probUninformPatClass{r\cup y }{r}{r\cup z}{m}{n} &= & \sum_{b_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{q}{r}{a_w\cup r } \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
+\mbox{ summing over all } b_j & \in & \subsetsOfSizeSet{z}{\numLeaves{\rightChild{n}}}{\numLeaves{\rightChild{n}}} \\
+\end{eqnarray*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{{\color{red}Future work - notes below here are not in a finished state}}
 
 For every $s\in \allStates$, we must consider the constant-$s$ pattern in the subtree, for every $m\in \allStates$ possible at the ancestral node $n$:
 \begin{eqnarray*}
@@ -352,7 +403,6 @@ We use the following rules for which probability ``bins'' in the children contri
 
 
 
-\section{{\color{red}Future work - notes below here are not in a finished state}}
 \subsection{Patterns that support a branch.}
 Here we consider the following problem: what is the probability of generating a pattern that is shorter on $T_1$ than on $T_{e2}$ or $T_{e3}$ where $T_{e2}$ and $T_{e3}$ are the two distinct tree topologies that are NNI neighbors of tree $T_1$ but do not contain edge $e$.
 Such a character would ``support'' edge $e$.
