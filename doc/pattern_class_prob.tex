@@ -132,7 +132,7 @@ If we introduce some more notation:
 \end{compactitem}
 then we can calculate $\Pr(x\in\patClass{\uninform}{j}{|j|-1}(\treeRoot))$ by summing the following terms:
 \begin{eqnarray}
-   \sum_{m\in\allStates}\probUninformPatClass{j}{\emptyset}{j}{m}{\treeRoot}\Pr(m|\theta) && 	\forall j \in  \subsetsOfSizeSet{\allStates}{\numLeavesTotal}{\numStates} \mbox{ if } N = |j|  \label{noRepeatedStates}\\
+   \sum_{m\in\allStates}\probUninformPatClass{j}{\emptyset}{j}{m}{\treeRoot}\Pr(m|\theta) && 	\forall j \in  \subsetsOfSizeSet{\allStates}{\numLeavesTotal}{\numLeavesTotal} \mbox{ if } N = |j|  \label{noRepeatedStates}\\
   \sum_{r\in j}\sum_{f\in\subsetsOfSizeSet{\allStates-r}{0}{\numLeavesTotal-1}}\sum_{m\in\allStates}\probUninformPatClass{j}{\{r\}}{r\cup f}{m}{\treeRoot}\Pr(m|\theta)  &&  \mbox{ if } N > |j| \mbox{ and }\forall j \in  \subsetsOfSizeSet{\allStates}{1}{\numLeavesTotal-1}\label{oneRepeatedState}\\
   0 && \mbox{ for all other } j \mbox{}
 \end{eqnarray}
