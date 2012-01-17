@@ -63,6 +63,7 @@
 \newcommand{\patClassSym}{\ensuremath{\mathcal C}\xspace}
 \newcommand{\patClass}[3]{\ensuremath{\patClassSym_{#1,#2,#3}}\xspace}
 \newcommand{\probUninformPatClassSym}{\ensuremath{\mathbb U}\xspace}
+\newcommand{\generalProbUninformPatClass}[6]{\ensuremath{{\mathbb #6}_{#1,#2,#3,#4}\left(#5\right)}\xspace}
 \newcommand{\probUninformPatClass}[5]{\ensuremath{\probUninformPatClassSym_{#1,#2,#3,#4}\left(#5\right)}\xspace}
 \newcommand{\informPatClassSym}{\ensuremath{\mathcal U}\xspace}
 \newcommand{\informPatClass}[5]{\ensuremath{\informPatClassSym_{#1,#2,#3,#4,#5}}\xspace}
@@ -89,7 +90,7 @@
 
 \newcounter{myFigCounter}
 \begin{document}
-\tableofcontents
+%\tableofcontents
 \section{Calculating the probability of classes of data pattern}
 Given:
 \begin{compactitem}
@@ -145,8 +146,8 @@ Note that in all cases, the non-zero probabilities are only obtained when the pa
 Below we will discuss how the $\probUninformPatClassSym$ lookup table can be calculated for each node.
 The calculations are performed on a post-order traversal of the tree.
 
-\subsection{Recursive calculations for the probability of patterns}
-\subsubsection{Leaves}
+\section{Recursive calculations for the probability of patterns}
+\subsection{Leaves}
 If node $n$ is a leaf, then there is no opportunity for the state at $n$ to change in the subtree rooted at $n$.
 In other words, the state at node $n$ will be only member of the set of states seen within the subtree; this state will be the only member of the Fitch down-pass state set.
 No state will be repeated, so the set of states observed more than once in the subtree must be the empty set.
@@ -157,6 +158,7 @@ From these properties, we can conclude that for any leaf $n$, and for all $m \in
 and $\probUninformPatClass{j}{r}{f}{m}{n} = 0$ if $j\neq\{m\}$, $r\neq\emptyset$, or $f\neq\{m\}$.
 
 
+\subsection{Uninformative patterns}
 \subsubsection{Uninformative patterns at internal nodes}
 A pattern that is informative for a subset of the taxa will automatically be informative for the entire set, so the elements of the calculation of $\probUninformPatClassSym$ for an internal node can be expressed from the probabilities of uninformative patterns of the children of the node.
 
@@ -221,7 +223,7 @@ We will use the $\DoubleFelsensteinPruneSym$ to denote use of a pruning calculat
 \end{eqnarray}
 This operation contributes the probability associated with state $m$ in the ancestor evolving to be state $a_m$ in the left child, and $b_m$ in the right child, with the appropriate indexing of the children's probability statements for the other indices.
 
-\subsubsection{Parsimony-uninformative, no repeated state}
+\subsection{Parsimony-uninformative, no repeated states}
 If $\numLeaves{n}\leq\numStates$, then for all $j\in\subsetsOfSizeSet{\allStates}{\numLeaves{n}}{\numLeaves{n}}$
 \begin{eqnarray}
 \probUninformPatClass{j}{\emptyset}{j}{m}{n}= \sum_{a_j\in\subsetsOfSizeSet{j}{\numLeaves{\leftChild{n}}}{\numLeaves{\leftChild{n}}}}\DoubleFelsensteinPruneUninform{n}{m}{a_j}{\emptyset}{a_j}{j-a_j}{\emptyset}{j-a_j}
@@ -230,7 +232,7 @@ Note that there will be $\numStates\choose\numLeaves{n}$ distinct sets that coul
 
 
 
-\subsubsection{Parsimony-uninformative, repeated state}
+\subsection{Parsimony-uninformative, repeated state}
 For all internal nodes, there is some probability of a parsimony-uninformative pattern in which a state is observed in multiple leaves.
 If $s$ represents the repeated state ($r=\{s\}$) then $s\in \allStates$, there are potentially many sets of ``other'' (non $s$) states observed: $o\in\subsetsOfSizeSet{\allStates-s}{0}{\numLeaves{n}-2}$.
 
@@ -285,20 +287,19 @@ Thus:
 \mbox{ where }r & =&  \{s\}   \nonumber \\
 q &  = & r \cup y - b_j\\
 a_w & = & z-b_j\\
-\probUninformPatClass{r\cup y }{r}{r\cup z}{m}{n} &+= & \sum_{b_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{q}{r}{a_w\cup r } \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
+\probUninformPatClass{r\cup y }{r}{r\cup z}{m}{n} & = & \generalProbUninformPatClass{r\cup y }{r}{r\cup z}{m}{n}{A} +\generalProbUninformPatClass{r\cup y }{r}{r\cup z}{m}{n}{B}  \\
+\generalProbUninformPatClass{r\cup y }{r}{r\cup z}{m}{n}{A} & = & \sum_{b_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{q}{r}{a_w\cup r } \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
 \mbox{ summing over all } b_j & \in & \subsetsOfSizeSet{z}{\numLeaves{\rightChild{n}}}{\numLeaves{\rightChild{n}}} \\
 \end{eqnarray*}
+Here ${\mathbb A}$ and ${\mathbb B}$ are used to denote calculations of the $\probUninformPatClassSym$ in which the repeated state is seen in the left and right subtrees respectively; the subscripts and arguments for ${\mathbb A}$ and ${\mathbb B}$ have the same meaning as when used with $\probUninformPatClassSym$.
+The formula for ${\mathbb B}$ mirrors the one for ${\mathbb A}$ with only the left and right subtree notation switched.
 
-The use of $+=$ here is a reminder that the calculations must be summed over this scenario and another in which the repeated state is found in the right subtree.
-
-\subsubsection{Parsimony-uninformative, no repeated states}
-In no state in the subtree is repeated then:
-\begin{eqnarray*}
-\mbox{for all } j & \in & \subsetsOfSizeSet{\allStates}{\numLeaves{n}}{\numLeaves{n}}\\
-\mbox{let } b_j & = & j - a_j \\
-\probUninformPatClass{j}{\emptyset}{j}{m}{n} &= & \sum_{a_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{a_j}{\emptyset}{a_j} \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
-\mbox{ summing over all } a_j & \in & \subsetsOfSizeSet{j}{\numLeaves{\leftChild{n}}}{\numLeaves{\leftChild{n}}} \\
-\end{eqnarray*}
+\section{Tasks to be accomplished}
+\begin{itemize}
+	\item Polish the writing of this for publication,
+	\item Determine the memory and computational scaling (perhaps focus on balanced and pectinate trees).
+	\item Work on specializations of this when the states are equivalent: If we have four equivalent states then the state set $\{1,2\}$ and the state set $\{1,3\}$ can simply be thought of as state sets of size 2. Reformatting the calculations in terms of binning probability by the number of states will speed things us.  Commonly used ``M$k$'' models assume that the states are equivalent, so this is a relevant extension of the work.
+\end{itemize}
 
 
 
@@ -315,6 +316,15 @@ In no state in the subtree is repeated then:
 
 
 \section{{\color{red}Future work - notes below here are not in a finished state}}
+\subsubsection{Parsimony-uninformative, no repeated states}
+In no state in the subtree is repeated then:
+\begin{eqnarray*}
+\mbox{for all } j & \in & \subsetsOfSizeSet{\allStates}{\numLeaves{n}}{\numLeaves{n}}\\
+\mbox{let } b_j & = & j - a_j \\
+\probUninformPatClass{j}{\emptyset}{j}{m}{n} &= & \sum_{a_j}\FelsensteinPruneUninform{\leftChild{n}}{m}{a_j}{\emptyset}{a_j} \FelsensteinPruneUninform{\rightChild{n}}{m}{b_j}{\emptyset}{b_j}\\
+\mbox{ summing over all } a_j & \in & \subsetsOfSizeSet{j}{\numLeaves{\leftChild{n}}}{\numLeaves{\leftChild{n}}} \\
+\end{eqnarray*}
+
 
 For every $s\in \allStates$, we must consider the constant-$s$ pattern in the subtree, for every $m\in \allStates$ possible at the ancestral node $n$:
 \begin{eqnarray*}
