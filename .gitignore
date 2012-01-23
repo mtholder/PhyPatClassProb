@@ -11,3 +11,10 @@ config.h
 config.log
 config.status
 stamp-h1
+doc/pattern_class_prob.aux
+pattern_class_prob.bbl
+pattern_class_prob.blg
+pattern_class_prob.log
+pattern_class_prob.out
+pattern_class_prob.pdf
+pattern_class_prob.toc
