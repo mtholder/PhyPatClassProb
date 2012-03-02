@@ -9,7 +9,9 @@
 #include "ncl/nxsallocatematrix.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-// header
+// In a bit of unfortunate nomenclature, the term "Symmetric" in this code
+//  is used to indicate a model that is an Mk variant (all states equally 
+//  frequent and all rates of exchangeability equal to each other).
 ////////////////////////////////////////////////////////////////////////////////
 class NxsCharactersBlock;
 class NxsSimpleNode;
@@ -88,7 +90,6 @@ inline std::vector<double> * getMutableProbsForStatesMask(MaskToProbsByState *m,
 
 class ProbForParsScore{
     public:
-    
         const MaskToProbsByState * getMapPtrForDownPass(const BitField sc) const {
             MaskToMaskToProbsByState::const_iterator scIt = this->byDownPass.find(sc);
             if (scIt == this->byDownPass.end())
@@ -102,8 +103,6 @@ class ProbForParsScore{
     private:
         MaskToMaskToProbsByState byDownPass;
         friend class ProbInfo;
-        
-        
 };
 
 class ProbInfo;
@@ -119,6 +118,9 @@ class ExpectedPatternSummary {
 class ProbInfo {
 	public:
 	    void createForTip(const CommonInfo &);
+		void calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen, 
+					   const ProbInfo & rightPI, double rightEdgeLen,
+					   TiMatFunc fn, const CommonInfo &);
 		void calculate(const ProbInfo & leftPI, double leftEdgeLen, 
 					   const ProbInfo & rightPI, double rightEdgeLen,
 					   TiMatFunc fn, const CommonInfo &);
@@ -133,8 +135,6 @@ class ProbInfo {
 		    return nLeavesBelow;
 		}
 	protected:
-		unsigned nLeavesBelow;
-	
         void addToAncProbVec(
                 std::vector<double> & pVec, 
                 const double *** leftPMatVec, const std::vector<double> * leftProbs,
@@ -151,7 +151,8 @@ class ProbInfo {
                 const unsigned accumScore,
                 const bool doingIntersection,
                 const CommonInfo & blob);
-                
+        // data     
+		unsigned nLeavesBelow;
 	    std::vector<ProbForParsScore> byParsScore;
 };
 
