@@ -88,6 +88,7 @@ inline std::vector<double> * getMutableProbsForStatesMask(MaskToProbsByState *m,
     return &(scIt->second);
 }
 
+// all probability calculations for one parsimony score
 class ProbForParsScore{
     public:
         const MaskToProbsByState * getMapPtrForDownPass(const BitField sc) const {
@@ -96,11 +97,12 @@ class ProbForParsScore{
                 return 0L;
             return &(scIt->second);
         }
-        const std::vector<double> * getProbsForDownPassAndMask(const BitField downPass, const BitField mask) const {
+        const std::vector<double> * getProbsForDownPassAndObsMask(const BitField downPass, const BitField mask) const {
             return getProbsForStatesMask(this-> getMapPtrForDownPass(downPass), mask);
         }
 
     private:
+    	// map from BitField to
         MaskToMaskToProbsByState byDownPass;
         friend class ProbInfo;
 };
@@ -153,6 +155,7 @@ class ProbInfo {
                 const CommonInfo & blob);
         // data     
 		unsigned nLeavesBelow;
+		
 	    std::vector<ProbForParsScore> byParsScore;
 };
 

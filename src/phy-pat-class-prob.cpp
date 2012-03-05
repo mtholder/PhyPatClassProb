@@ -298,17 +298,25 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 					   TiMatFunc fn,
 					   const CommonInfo & blob) {
 	std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculateSymmetric \n" ;
+	
+	// fn will fill the prob matrix (blob.firstMatVec) for the appropriate branch length
 	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
 	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
 	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
 	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
 	
+	// now leftPMatVec and rightPMatVec correctly populated with transition probabilities
+	
+	
 	const unsigned int leftMaxP = leftPI.getMaxParsScore();
-	const unsigned rightMaxP = rightPI.getMaxParsScore();
-	const unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
+	const unsigned int rightMaxP = rightPI.getMaxParsScore();
+	const unsigned int maxParsScore = 1 + leftMaxP + rightMaxP;
+
 	this->byParsScore.clear();
 	this->byParsScore.resize(maxParsScore + 1); // add one to account zero
+
 	this->nLeavesBelow = leftPI.getNLeavesBelow() + rightPI.getNLeavesBelow();
+
 	unsigned obsMaxParsScore = 0;
 	// do the calculations for staying in the constant patterns, these are more simple than the general calcs...
 	if (true) { //@TEMP if true so that variables are scoped.
@@ -316,22 +324,18 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		const ProbForParsScore & rightFPS = rightPI.getByParsScore(0);
 		ProbForParsScore & forZeroSteps = this->byParsScore[0];
 		
-		
 		unsigned stateIndex = 0;
-		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
-				scIt != blob.singleStateCodes.end();
-				++scIt, ++stateIndex) {
-			const BitField sc = *scIt;
-			const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndMask(sc, sc);
-			assert(leftProbs != 0L);
-			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndMask(sc, sc);
-			assert(rightProbs != 0L);
-	
-			std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
-			toFillVec.assign(blob.nRates*blob.nStates, 0.0);
-			
-			addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
-		}
+		const BitField sc = 1;
+
+		const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndObsMask(sc, sc);
+		assert(leftProbs != 0L);
+		const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndObsMask(sc, sc);
+		assert(rightProbs != 0L);
+
+		std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
+		toFillVec.assign(blob.nRates*blob.nStates, 0.0);
+		
+		addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 	}
 	
 	// order N
@@ -414,9 +418,9 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 				scIt != blob.singleStateCodes.end();
 				++scIt, ++stateIndex) {
 			const BitField sc = *scIt;
-			const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndMask(sc, sc);
+			const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndObsMask(sc, sc);
 			assert(leftProbs != 0L);
-			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndMask(sc, sc);
+			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndObsMask(sc, sc);
 			assert(rightProbs != 0L);
 	
 			std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
@@ -551,10 +555,10 @@ bool ProbInfo::allCalcsForAllPairs(
 				// order (2^k)
 				for (BitFieldRow::const_iterator rasIt = rightSSRow.begin(); rasIt != rightSSRow.end(); ++rasIt) {
 					const BitField rightAllStates = *rasIt;
-					std::cerr << "from line: " << __LINE__<< ":  rightAllStates="  << blob.toSymbol(rightAllStates) << '\n';
+//					std::cerr << "from line: " << __LINE__<< ":  rightAllStates="  << blob.toSymbol(rightAllStates) << '\n';
 					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 					if (rightProbs == 0L) {
-						std::cerr << "from line: " << __LINE__<< ": right child empty bin. Skipping...\n";
+//						std::cerr << "from line: " << __LINE__<< ": right child empty bin. Skipping...\n";
 						continue; 
 					}
 					const BitField ancAllField = (rightAllStates|leftAllStates);
@@ -565,9 +569,9 @@ bool ProbInfo::allCalcsForAllPairs(
 						ancVec->assign(blob.nRates*blob.nStates, 0.0);
 					}
 					probsAdded = true;
-					std::cerr << __LINE__ << " adding:";
-					std::cerr << " leftDown="  << blob.toSymbol(leftDown)  << " leftAccum="  << leftAccum  << " leftAllStates="  << blob.toSymbol(leftAllStates);
-					std::cerr << " rightDown=" << blob.toSymbol(rightDown) << " rightAccum=" << rightAccum << " rightAllStates=" << blob.toSymbol(rightAllStates) << " \n";
+//					std::cerr << __LINE__ << " adding:";
+//					std::cerr << " leftDown="  << blob.toSymbol(leftDown)  << " leftAccum="  << leftAccum  << " leftAllStates="  << blob.toSymbol(leftAllStates);
+//					std::cerr << " rightDown=" << blob.toSymbol(rightDown) << " rightAccum=" << rightAccum << " rightAllStates=" << blob.toSymbol(rightAllStates) << " \n";
 					addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 				}
 			}
@@ -584,9 +588,13 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 	if (leftProbs == 0L || rightProbs == 0L)
 		return;
 	unsigned rOffset = 0;
+	// ignore loop over rates blob.nRates = 1
 	for (unsigned r = 0; r < blob.nRates; ++r) {
+		// this code looks up the correct transition prob matrix
 		const double ** leftPMat = leftPMatVec[r];
 		const double ** rightPMat = rightPMatVec[r];
+		
+		
 		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
 			double leftProb = 0.0;
 			double rightProb = 0.0;
@@ -594,6 +602,9 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 				const double leftTiProb = leftPMat[ancState][desState];
 				const double leftAccumProb = (*leftProbs)[rOffset + desState];
 				leftProb += leftTiProb*leftAccumProb;
+				
+				
+				
 				const double rightTiProb = rightPMat[ancState][desState];
 				const double rightAccumProb = (*rightProbs)[rOffset + desState];
 				rightProb += rightTiProb*rightAccumProb;
@@ -797,51 +808,95 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 }
 // marginalize over downpass set, rate categories, and anc states
 ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, const CommonInfo & blob) {
-	
-	const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
-	std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
-	this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
-	const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
-	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
-		 	scIt != blob.singleStateCodes.end();
-		 	++scIt) {
-		 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
-		 const std::vector<double> * pVec = constFPS.getProbsForDownPassAndMask(downPass, downPass);
-		 assert(pVec);
-		 double patClassProb = 0.0;
-		 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
-		 std::vector<double>::const_iterator pIt = pVec->begin();
-		 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
-		 	assert(pIt != pVec->end());
-		 	patClassProb += (*wtIt) * (*pIt);
-		 }
-		 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
-	}
-	
-	for (unsigned i = 1; i <= maxNumSteps; ++i) {
-		const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
-		 for (BitField downPass= 1; ;++downPass) {
-			for (BitField obsStates = 1; ; ++obsStates ) {
-			 	double patClassProb = 0.0;
-				 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
-				 const std::vector<double> * pVec = fps.getProbsForDownPassAndMask(downPass, obsStates);
-				 if (pVec) {
-					 std::vector<double>::const_iterator pIt = pVec->begin();
-					 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
-						assert(pIt != pVec->end());
-						patClassProb += (*wtIt) * (*pIt);
-					 }
+	if (blob.isSymmetric) {
+		const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
+		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
+		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
+		const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+				scIt != blob.singleStateCodes.end();
+				++scIt) {
+			 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
+			 const std::vector<double> * pVec = constFPS.getProbsForDownPassAndObsMask(1, 1);
+			 assert(pVec);
+			 double patClassProb = 0.0;
+			 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
+			 std::vector<double>::const_iterator pIt = pVec->begin();
+			 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
+				assert(pIt != pVec->end());
+				patClassProb += (*wtIt) * (*pIt);
+			 }
+			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
+		}
+		
+		for (unsigned i = 1; i <= maxNumSteps; ++i) {
+			const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
+			 for (BitField downPass= 1; ;++downPass) {
+				for (BitField obsStates = 1; ; ++obsStates ) {
+					double patClassProb = 0.0;
+					 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
+					 const std::vector<double> * pVec = fps.getProbsForDownPassAndObsMask(downPass, obsStates);
+					 if (pVec) {
+						 std::vector<double>::const_iterator pIt = pVec->begin();
+						 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
+							assert(pIt != pVec->end());
+							patClassProb += (*wtIt) * (*pIt);
+						 }
+					}
+					this->probsByStepsThenObsStates[i][obsStates] += patClassProb;
+					if (obsStates == blob.lastBitField)
+						break;
 				}
-			 	this->probsByStepsThenObsStates[i][obsStates] += patClassProb;
-				if (obsStates == blob.lastBitField)
-				 	break;
-		 	}
-		 	if (downPass == blob.lastBitField)
-		 		break;
-		 }
+				if (downPass == blob.lastBitField)
+					break;
+			 }
+		}
+	}
+	else {
+		const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
+		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
+		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
+		const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+				scIt != blob.singleStateCodes.end();
+				++scIt) {
+			 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
+			 const std::vector<double> * pVec = constFPS.getProbsForDownPassAndObsMask(downPass, downPass);
+			 assert(pVec);
+			 double patClassProb = 0.0;
+			 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
+			 std::vector<double>::const_iterator pIt = pVec->begin();
+			 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
+				assert(pIt != pVec->end());
+				patClassProb += (*wtIt) * (*pIt);
+			 }
+			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
+		}
+		
+		for (unsigned i = 1; i <= maxNumSteps; ++i) {
+			const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
+			 for (BitField downPass= 1; ;++downPass) {
+				for (BitField obsStates = 1; ; ++obsStates ) {
+					double patClassProb = 0.0;
+					 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
+					 const std::vector<double> * pVec = fps.getProbsForDownPassAndObsMask(downPass, obsStates);
+					 if (pVec) {
+						 std::vector<double>::const_iterator pIt = pVec->begin();
+						 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
+							assert(pIt != pVec->end());
+							patClassProb += (*wtIt) * (*pIt);
+						 }
+					}
+					this->probsByStepsThenObsStates[i][obsStates] += patClassProb;
+					if (obsStates == blob.lastBitField)
+						break;
+				}
+				if (downPass == blob.lastBitField)
+					break;
+			 }
+		}
 	}
 }
-
 void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 	
 	const unsigned maxNumSteps = this->probsByStepsThenObsStates.size() - 1;
@@ -1445,8 +1500,10 @@ int main(int argc, char * argv[]) {
 //					calculatePatternClassProbabilities(nclTree, std::cout, JCMulitCatTiMat, blob); //@TEMP JC
 					calculatePatternClassProbabilities(nclTree, std::cout, GenericMulitCatTiMat, blob); //@TEMP JC
 
-					PatternSummary observed;
-					classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, pwPtr, std::cout, &observed, blob);
+					if (false) {
+						PatternSummary observed;
+						classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, pwPtr, std::cout, &observed, blob);
+					}
 				}
 				else {
 					std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";
