@@ -23,6 +23,7 @@ void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeID
 // Globals (all should start with g[A-Z] pattern to make it easier to find and replace them later).
 const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
 
+
 struct CommonInfo {
 		bool isSymmetric;
 		unsigned nStates;
@@ -74,11 +75,6 @@ struct CommonInfo {
 		
 		ScopedDblTwoDMatrix relRateMat;
 		std::vector<double> stateFreqVector;
-		
-		
-		
-		
-		
 };
 
 CommonInfo * gBlob = 0L;
@@ -96,7 +92,8 @@ std::set<BitField> toElements(BitField sc) {
 	return ret;
 }
 
-void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo) {
+void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, 
+				  NodeIDToProbInfo & nodeIDToProbInfo) {
 
 	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
 			ndIt != preorderVec.rend();
@@ -710,10 +707,9 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 	ProbInfo tipProbInfo;
 	tipProbInfo.createForTip(blob);
 	try {
-		for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
-				ndIt != preorderVec.rend();
-				++ndIt) {
-			const NxsSimpleNode * nd = *ndIt;
+		int ndInd = preorderVec.size() - 1;
+		for (; ndInd >= 0; --ndInd) {
+			const NxsSimpleNode * nd = preorderVec[ndInd];
 			std::vector<NxsSimpleNode *> children = nd->GetChildren();
 			const unsigned numChildren = children.size();
 			std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculatePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
@@ -888,10 +884,9 @@ void classifyObservedDataIntoClasses(
 	NodeIDToParsInfo nodeIDToParsInfo;
 	const ParsInfo * rootParsInfo = 0L;
 	assert(blob.zeroVec.size() == mat[0].size());
-	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
-			ndIt != preorderVec.rend();
-			++ndIt) {
-		const NxsSimpleNode * nd = *ndIt;
+	int ndInd = preorderVec.size() - 1;
+	for (; ndInd >= 0; ndInd--) {
+		const NxsSimpleNode * nd = preorderVec[ndInd];
 		std::vector<NxsSimpleNode *> children = nd->GetChildren();
 		const unsigned numChildren = children.size();
 		std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In classifyObservedDataIntoClasses at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
