@@ -373,7 +373,8 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	// even though, we are accessing state set {0} for each child, we are using
 	// symmetry to treat one of the children as having state {1}.
 	// thus, our ancestor has observed state set {0, 1} (or 3 in BitField notation).
-	const BitField ancAllField = 3; 
+	const BitField ancAllField = 3;
+	MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[0];
 	std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
 	if (ancVec == 0L) { // if we have not visited this set of probabilities, start with a vector of 0's
 		ancVec = &(forCurrScoreDownPass[ancAllField]); // get the memory
