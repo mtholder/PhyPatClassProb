@@ -338,8 +338,52 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 	}
 	
-	// order N
-	for (unsigned currScore = 1; currScore <= maxParsScore; ++currScore) {
+	unsigned currScore = 1;
+
+	std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+	bool scObserved = false;
+	ProbForParsScore & forCurrScore = this->byParsScore[currScore];
+	for (BitField downPass = 1; ; ++downPass) {
+		const unsigned numStatesInMask = blob.getNumStates(downPass);
+		if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
+		
+			MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
+			
+			if (blob.getNumStates(downPass) > 1) {
+				std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+				const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
+				scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+										  forUnions,
+										  leftPI,
+										  leftPMatVec,
+										  rightPI,
+										  rightPMatVec,
+										  currScore - 1,
+										  false,
+										  blob) || scObserved;
+			}
+			if (leftMaxP + rightMaxP >= currScore) {
+				std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+				const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
+				scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+										  forIntersections,
+										  leftPI,
+										  leftPMatVec,
+										  rightPI,
+										  rightPMatVec,
+										  currScore,
+										  true,
+										  blob) || scObserved;
+			}
+		}
+		if (downPass == blob.lastBitField)
+			break;
+		assert(downPass < blob.lastBitField);
+	}
+	if (scObserved)
+		obsMaxParsScore = currScore;
+
+	for (unsigned currScore = 2; currScore <= maxParsScore; ++currScore) {
 		std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
 		bool scObserved = false;
 		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
@@ -813,19 +857,19 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
 		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
 		const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
+		const std::vector<double> * pVec = constFPS.getProbsForDownPassAndObsMask(1, 1);
+		assert(pVec);
+		double patClassProb = 0.0;
+		std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
+		std::vector<double>::const_iterator pIt = pVec->begin();
+		for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
+			assert(pIt != pVec->end());
+			patClassProb += (*wtIt) * (*pIt);
+		}
 		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
 				scIt != blob.singleStateCodes.end();
 				++scIt) {
 			 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
-			 const std::vector<double> * pVec = constFPS.getProbsForDownPassAndObsMask(1, 1);
-			 assert(pVec);
-			 double patClassProb = 0.0;
-			 std::vector<double>::const_iterator wtIt = blob.categStateProb.begin();
-			 std::vector<double>::const_iterator pIt = pVec->begin();
-			 for (; wtIt != blob.categStateProb.end() ; ++wtIt, ++pIt) {
-				assert(pIt != pVec->end());
-				patClassProb += (*wtIt) * (*pIt);
-			 }
 			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
 		}
 		
