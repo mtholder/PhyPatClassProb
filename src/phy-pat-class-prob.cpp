@@ -339,7 +339,95 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	}
 	
 	// order N
-	for (unsigned currScore = 1; currScore <= maxParsScore; ++currScore) {
+	unsigned currScore = 1;
+
+	std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+	bool scObserved = false;
+	ProbForParsScore & forCurrScore = this->byParsScore[currScore];
+
+	
+	BitField downPass = 1;
+	// do some stuff
+	
+	// if the ancestor has state set of {0,1}, and currScore = 1 then
+	// 	both children must display a single state.
+	downPass = 3;
+	unsigned int leftAccum = 0;
+	BitField leftDown = 1; // set {0}  is 1 in our bitfield notation
+	unsigned int rightAccum = 0;
+	BitField rightDown = 1; // set {0}  is 1 in our bitfield notation
+	const ProbForParsScore & leftFPS = leftPI.getByParsScore(leftAccum);
+	const MaskToProbsByState * leftM2PBS = leftFPS.getMapPtrForDownPass(leftDown);
+	assert(leftM2PBS != 0L);
+	const ProbForParsScore & rightFPS = rightPI.getByParsScore(rightAccum);
+	const MaskToProbsByState * rightM2PBS = rightFPS.getMapPtrForDownPass(rightDown);
+	assert(rightM2PBS != 0L);
+	const BitFieldRow & leftSSRow = blob.statesSupersets[leftDown];
+	const BitField leftAllStates = 1; // set {0}  is 1 in our bitfield notation
+	const BitField rightAllStates = 1; // set {0}  is 1 in our bitfield notation
+	const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
+	assert(leftProbs != 0L);
+	const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
+	assert(rightProbs != 0L);
+	
+	// even though, we are accessing state set {0} for each child, we are using
+	// symmetry to treat one of the children as having state {1}.
+	// thus, our ancestor has observed state set {0, 1} (or 3 in BitField notation).
+	const BitField ancAllField = 3; 
+	std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
+	if (ancVec == 0L) { // if we have not visited this set of probabilities, start with a vector of 0's
+		ancVec = &(forCurrScoreDownPass[ancAllField]); // get the memory
+		ancVec->assign(blob.nRates*blob.nStates, 0.0); // set it to 0.0
+	}
+	addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+	
+	
+	for (BitField downPass = 1; ; ++downPass) {
+		const unsigned numStatesInMask = blob.getNumStates(downPass);
+		if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
+		
+			MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
+			
+			if (blob.getNumStates(downPass) > 1) {
+				std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+				const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
+				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+										  forUnions,
+										  leftPI,
+										  leftPMatVec,
+										  rightPI,
+										  rightPMatVec,
+										  currScore - 1,
+										  false,
+										  blob);
+				if (didCalculations)
+					scObserved = true;
+			}
+			if (leftMaxP + rightMaxP >= currScore) {
+				std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+				const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
+				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+										  forIntersections,
+										  leftPI,
+										  leftPMatVec,
+										  rightPI,
+										  rightPMatVec,
+										  currScore,
+										  true,
+										  blob) || scObserved;
+				if (didCalculations)
+					scObserved = true;
+			}
+		}
+		if (downPass == blob.lastBitField)
+			break;
+		assert(downPass < blob.lastBitField);
+	}
+	if (scObserved)
+		obsMaxParsScore = currScore;
+
+
+	for (currScore = 2;  currScore <= maxParsScore; ++currScore) {
 		std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
 		bool scObserved = false;
 		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
@@ -481,6 +569,7 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 	}
 }
 
+// \returns true if there were probabalities that were summed
 bool ProbInfo::allCalcsForAllPairs(
 			MaskToProbsByState & forCurrScoreDownPass, 
 			const VecMaskPair & pairVec,
