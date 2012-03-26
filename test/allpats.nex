@@ -6,6 +6,7 @@ begin taxa;
 	dimensions ntax = 4;
 	taxlabels one two three four;
 end;
+
 begin characters;
 	dimensions nchar = 256;
 	format datatype = dna interleave;
