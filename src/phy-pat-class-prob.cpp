@@ -339,15 +339,46 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	}
 	
 	unsigned currScore = 1;
-
 	std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
-	bool scObserved = false;
+	bool scObserved = true;
 	ProbForParsScore & forCurrScore = this->byParsScore[currScore];
-
-	
+	// if the ancestor has state set of {0}, and currScore = 1 then
+	// 	one child must display a single state, and the other must have 2 states observed 
 	BitField downPass = 1;
-	// do some stuff
-	
+	if (true) { // braces for reducing the scoping of variables, only
+		unsigned int leftAccum = 0;
+		const ProbForParsScore * leftFPS = &(leftPI.getByParsScore(leftAccum));
+		unsigned int rightAccum = 1; // one step on the right side
+		const ProbForParsScore * rightFPS = &(rightPI.getByParsScore(rightAccum));
+
+		for (int leftright = 0; leftright < 2; ++leftright) {
+			BitField leftDown = 1; // set {0}  is 1 in our bitfield notation
+			const MaskToProbsByState * leftM2PBS = leftFPS->getMapPtrForDownPass(leftDown);
+			assert(leftM2PBS != 0L);
+			const BitField leftAllStates = 1; // set {0}  is 1 in our bitfield notation
+			const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
+			assert(leftProbs != 0L);
+			const BitField rightAllStates = (1|2); // set {0}  is 1 in our bitfield notation
+			BitField rightDownArray[] = {1, 1|2};
+			for (int rdi = 0 ; rdi < 2; ++rdi) {
+				BitField rightDown = rightDownArray[rdi];
+				const MaskToProbsByState * rightM2PBS = rightFPS->getMapPtrForDownPass(rightDown);
+				assert(rightM2PBS != 0L);
+				const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
+				assert(rightProbs != 0L);
+				
+				const BitField ancAllField = (1|2);
+				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass.at(downPass);
+				std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
+				if (ancVec == 0L) { // if we have not visited this set of probabilities, start with a vector of 0's
+					ancVec = &(forCurrScoreDownPass.at(ancAllField)); // get the memory
+					ancVec->assign(blob.nRates*blob.nStates, 0.0); // set it to 0.0
+				}
+				addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+			}
+			std::swap(leftFPS, rightFPS);
+		}
+	}		
 	// if the ancestor has state set of {0,1}, and currScore = 1 then
 	// 	both children must display a single state.
 	downPass = 3;
@@ -361,7 +392,6 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	const ProbForParsScore & rightFPS = rightPI.getByParsScore(rightAccum);
 	const MaskToProbsByState * rightM2PBS = rightFPS.getMapPtrForDownPass(rightDown);
 	assert(rightM2PBS != 0L);
-	const BitFieldRow & leftSSRow = blob.statesSupersets[leftDown];
 	const BitField leftAllStates = 1; // set {0}  is 1 in our bitfield notation
 	const BitField rightAllStates = 1; // set {0}  is 1 in our bitfield notation
 	const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
@@ -379,9 +409,16 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		ancVec = &(forCurrScoreDownPass[ancAllField]); // get the memory
 		ancVec->assign(blob.nRates*blob.nStates, 0.0); // set it to 0.0
 	}
-	addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+	std::vector<unsigned int> stateCodeTranslationVec;
+	for (unsigned i = 0; i < blob.nStates; ++i) {
+		stateCodeTranslationVec.push_back(i);
+	}
+	stateCodeTranslationVec[0] = 1;
+    stateCodeTranslationVec[1] = 0;
+	addToAncProbVecSymmetric(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, stateCodeTranslationVec, blob);
+	addToAncProbVecSymmetric(*ancVec, rightPMatVec, rightProbs, leftPMatVec, leftProbs, stateCodeTranslationVec, blob);
 	
-	
+/*	
 	for (BitField downPass = 1; ; ++downPass) {
 		const unsigned numStatesInMask = blob.getNumStates(downPass);
 		if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
@@ -423,6 +460,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 			break;
 		assert(downPass < blob.lastBitField);
 	}
+	*/
 	if (scObserved)
 		obsMaxParsScore = currScore;
 
@@ -669,6 +707,43 @@ bool ProbInfo::allCalcsForAllPairs(
 }
 
 
+void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec, 
+		const double *** leftPMatVec, const std::vector<double> * leftProbs,
+		const double *** rightPMatVec, const std::vector<double> * rightProbs,
+		const std::vector<unsigned int> & rightChildStateCodeTranslation,
+		const CommonInfo & blob) {
+	if (leftProbs == 0L || rightProbs == 0L)
+		return;
+	unsigned rOffset = 0;
+	// ignore loop over rates blob.nRates = 1
+	for (unsigned r = 0; r < blob.nRates; ++r) {
+		// this code looks up the correct transition prob matrix
+		const double ** leftPMat = leftPMatVec[r];
+		const double ** rightPMat = rightPMatVec[r];
+		
+		
+		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
+			double leftProb = 0.0;
+			double rightProb = 0.0;
+			for (unsigned desState = 0; desState < blob.nStates; ++desState) {
+				
+				const double leftTiProb = leftPMat[ancState][desState];
+				const double leftAccumProb = (*leftProbs)[rOffset + desState];
+				leftProb += leftTiProb*leftAccumProb;
+				
+				
+				const unsigned int translatedState = rightChildStateCodeTranslation[desState];
+				const double rightTiProb = rightPMat[ancState][translatedState];
+				const double rightAccumProb = (*rightProbs)[rOffset + desState];
+				std::cerr << "addToAncProbVecSymmetric tr = " << translatedState << " des " << desState << " rightTiProb= " << rightTiProb << " rightAccumProb = " << rightAccumProb <<'\n';
+				rightProb += rightTiProb*rightAccumProb;
+			}
+			pVec[rOffset + ancState] += leftProb*rightProb;
+		}
+		rOffset += blob.nStates;
+	}
+}
+
 void ProbInfo::addToAncProbVec(std::vector<double> & pVec, 
 		const double *** leftPMatVec, const std::vector<double> * leftProbs,
 		const double *** rightPMatVec, const std::vector<double> * rightProbs,
@@ -897,9 +972,11 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 // marginalize over downpass set, rate categories, and anc states
 ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, const CommonInfo & blob) {
 	if (blob.isSymmetric) {
+		
 		const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
 		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
 		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
+		// special case for constant patterns
 		const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
 		const std::vector<double> * pVec = constFPS.getProbsForDownPassAndObsMask(1, 1);
 		assert(pVec);
@@ -917,6 +994,7 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
 		}
 		
+		// all other number of states
 		for (unsigned i = 1; i <= maxNumSteps; ++i) {
 			const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
 			 for (BitField downPass= 1; ;++downPass) {

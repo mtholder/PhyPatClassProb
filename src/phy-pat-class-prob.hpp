@@ -98,11 +98,11 @@ class ProbForParsScore{
             return &(scIt->second);
         }
         const std::vector<double> * getProbsForDownPassAndObsMask(const BitField downPass, const BitField mask) const {
-            return getProbsForStatesMask(this-> getMapPtrForDownPass(downPass), mask);
+            return getProbsForStatesMask(this->getMapPtrForDownPass(downPass), mask);
         }
 
     private:
-    	// map from BitField to
+    	// map from Downpass BitField => map of observed state set BitField => prob vec
         MaskToMaskToProbsByState byDownPass;
         friend class ProbInfo;
 };
@@ -142,7 +142,13 @@ class ProbInfo {
                 const double *** leftPMatVec, const std::vector<double> * leftProbs,
                 const double *** rightPMatVec, const std::vector<double> * rightProbs,
                 const CommonInfo & blob);
-            
+        // declaration
+        void addToAncProbVecSymmetric(std::vector<double> & pVec, 
+                const double *** leftPMatVec, const std::vector<double> * leftProbs,
+                const double *** rightPMatVec, const std::vector<double> * rightProbs,
+                const std::vector<unsigned int> & rightChildStateCodeTranslation,
+                const CommonInfo & blob);
+		
         bool allCalcsForAllPairs(
                 MaskToProbsByState & forCurrScoreDownPass,
                 const VecMaskPair & pairVec,
