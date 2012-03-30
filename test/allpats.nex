@@ -96,7 +96,7 @@ begin paup;
 end;
 begin trees;
 	
-	tree mine = [&U]  [ ((2:0.01,3:0.02):0.04,1:0.08,4:0.1); ]
+	tree mine = [&U]  
  ( 1 : 0.08 , ( 2 : 0.01 ,	3 : 0.02 ) : 0.04 , 4 : 0.1 );
 end;
 begin paup;
