@@ -25,7 +25,7 @@
 
 \definecolor{bordercol}{RGB}{40,40,40}
 \definecolor{headercol1}{RGB}{186,215,230}
-\definecolor{headercol2}{RGB}{0,0,255}
+\definecolor{headercol2}{RGB}{0,60,255}
 \definecolor{headerfontcol}{RGB}{0,0,0}
 \definecolor{boxcolor}{RGB}{186,215,230}
 
@@ -116,7 +116,8 @@ We are developing dynamic programming algorithms to calculate the probabilities 
 %\includegraphics[width=\linewidth]{time_windows}
 }
 
-\headerbox{Algorithm}{name=algorithm,column=0,below=intro}{
+\headerbox{Research Goals}{name=research goals,column=0,below=intro}{
+We are working to discover algorithms to implement the specialization for symmetric models.  Recognizing these symmetric cases will simplify the code's representation in C++, decreasing redundancy and increasing efficiency.  
 }
 
 \headerbox{Results}{name=results,span=2,column=1,row=0}{
@@ -128,10 +129,14 @@ We are developing dynamic programming algorithms to calculate the probabilities 
 \headerbox{Results3}{name=results3,column=3,row=0}{
 }
 
+\headerbox{Future Work}{name=future work,column=2,row=3}{
+We plan to include our approaches in the GARLI \citep{GARLI} software package to be used in inferring evolutionary trees.  We also plan on applying the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}, as well as Felsenstein's \citep{Felsenstein1981} pruning algorithm to larger data sets, in order to have a better idea of certain evolutionary behaviors.
+}
+
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
 \smaller						% Make the whole text smaller
 \vspace{-0.4em}			% Save some space at the beginning
-IMSD
+The authors would like to thank NSF and the IMSD program for funding.
 } 
 
 \headerbox{References}{name=references,column=3,below=acknowledgements}{
