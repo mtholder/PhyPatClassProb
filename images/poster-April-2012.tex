@@ -113,16 +113,19 @@ For example, the model adequacy approach of Waddell et al. (2009) requires calcu
 Extending the morphological models of Lewis \citep{Lewis2001} to deal with many data sets requires calculating the probability of any parsimony-informative pattern arising (`parsimony' referring to the simplest explanation of the data, and parsimony-informative referring to those patterns which affect phylogenetic estimation). Application of the approaches of Waddell {\em et al.~}\citep{WaddellOP2009} and Lewis\citep{Lewis2001} are limited because the only known methods for calculating the probability of a class of patterns involve either simulating a large amount of data or exhaustively considering every member of the class. Neither approach is feasible on large trees.
 
 We are developing dynamic programming algorithms to calculate the probabilities of pattern classes in one pass down a phylogenetic tree. The algorithms include a general approach (applicable to any standard model of character evolution) as well as optimizations for the fully symmetric models (e.g. those of Lewis\citep{Lewis2001}). We are implementing these algorithms in open source software written in C++, and plan to include the approaches in the GARLI \citep{GARLI} software package for use in inferring evolutionary trees.
-%\includegraphics[width=\linewidth]{time_windows}
+%
 }
 
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
-We are working to discover algorithms to implement the specialization for symmetric models.  Recognizing these symmetric cases will simplify the code's representation in C++, decreasing redundancy and increasing efficiency.  
+We are working to discover algorithms which will calculate the probabilities of classes of patterns in phylogenetic binary trees.  In particular, we are striving to implement these algorithms towards the specialization for symmetric models.  This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software.
 }
 
 \headerbox{Results}{name=results,span=2,column=1,row=0}{
+Although still in the process of completing the specialization for the symmetric case, we are now able to sketch out a rough computational complexity for it.  We have found here that the distinct subsets do not need considering.  Rather, it is only necessary to focus on the actual number of observed states, and to count the size of the subsets.  So, we need only to store information about each bin of probabilities, as opposed to having to store each of the state sets.  This unveils the potential for drastic improvement and simplification in the algorithm.\\
+\includegraphics[width=28em]{waddellTree}
 }
 \headerbox{Results2}{name=results2,column=1,below=results}{
+There are (n-1) internal nodes in a tree, which increases by a factor of one with each additional leaf on the tree.  (This is scaled linearly).  We must sweep over all the possible parsimony lengths under that, which are equal to [1-(the number of leaves at that point)].  Therefore, at each child we will need to calculate for 0 and 1, whereas at the ancestor we will need to calculate for 0, 1, 2 and 3.  But as the tree becomes very large, the number of calculations / the number of length bins will be approximately of the order n.  
 }
 \headerbox{Results4}{name=results4,column=2,below=results}{
 }
@@ -130,13 +133,14 @@ We are working to discover algorithms to implement the specialization for symmet
 }
 
 \headerbox{Future Work}{name=future work,column=2,row=3}{
-We plan to include our approaches in the GARLI \citep{GARLI} software package to be used in inferring evolutionary trees.  We also plan on applying the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}, as well as Felsenstein's \citep{Felsenstein1981} pruning algorithm to larger data sets, in order to have a better idea of certain evolutionary behaviors.
+We will continue to work towards .  This will include counting the size of the subsets, We plan to include our approaches in the GARLI \citep{GARLI} software package to be used in inferring evolutionary trees.  We also plan on applying the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}, as well as Felsenstein's \citep{Felsenstein1981} pruning algorithm to larger data sets, in order to have a better idea of certain evolutionary behaviors.
 }
 
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
 \smaller						% Make the whole text smaller
 \vspace{-0.4em}			% Save some space at the beginning
-The authors would like to thank NSF and the IMSD program for funding.
+NSF
+IMSD
 } 
 
 \headerbox{References}{name=references,column=3,below=acknowledgements}{
