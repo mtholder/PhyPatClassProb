@@ -117,18 +117,28 @@ We are developing dynamic programming algorithms to calculate the probabilities 
 }
 
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
-We are working to discover algorithms which will calculate the probabilities of classes of patterns in phylogenetic binary trees.  In particular, we are striving to implement these algorithms towards the specialization for symmetric models.  This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software.
+\begin{itemize}
+\item We are working to discover algorithms which will calculate the probabilities of classes of patterns in phylogenetic binary trees.  
+\item In particular, we are striving to implement these algorithms towards the specialization for symmetric models.  This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software.
+\end{itemize}
 }
 
-\headerbox{Results}{name=results,span=2,column=1,row=0}{
-Although still in the process of completing the specialization for the symmetric case, we are now able to sketch out a rough computational complexity for it.  We have found here that the distinct subsets do not need considering.  Rather, it is only necessary to focus on the actual number of observed states, and to count the size of the subsets.  So, we need only to store information about each bin of probabilities, as opposed to having to store each of the state sets.  This unveils the potential for drastic improvement and simplification in the algorithm.\\
+\headerbox{Results for the General Algorithm}{name=results,span=2,column=1,row=0}{
+Waddell {\em et al.~}\citep{WaddellOP2009} used simulation in his tables to obtain expected probability values.  We tested our algorithm with the same data and obtained very similar values.  This figure represents a phylogenetic tree which uses this data to perform pairwise tests.  In this figure, long branches simplify many changes; the character states in these branches' DNA are much different than in other branches.\\
 \includegraphics[width=28em]{waddellTree}
 }
-\headerbox{Results2}{name=results2,span=2,column=1,below=results}{
+\headerbox{Results for the Symmetric Case}{name=results2,span=2,column=1,below=results}{
+Although still in the process of completing the specialization for the symmetric case, we are now able to sketch out a rough computational complexity for it.  We have found here that the distinct subsets do not need considering.  Rather, it is only necessary to focus on the actual number of observed states, and to count the size of the subsets.  So, we need only to store information about each bin of probabilities, as opposed to having to store each of the state sets.  This unveils the potential for drastic improvement and simplification in the algorithm.
+
+
 There are (n-1) internal nodes in a tree, which increases by a factor of one with each additional leaf on the tree.  (This is scaled linearly).  We must sweep over all the possible parsimony lengths under that, which are equal to [1-(the number of leaves at that point)].  Therefore, at each child we will need to calculate for 0 and 1, whereas at the ancestor we will need to calculate for 0, 1, 2 and 3.  But as the tree becomes very large, the number of calculations / the number of length bins will be approximately of the order n.  
 }
 \headerbox{Future Work}{name=results3,column=3,row=0}{
-We will continue to work towards .  This will include counting the size of the subsets, We plan to include our approaches in the GARLI \citep{GARLI} software package to be used in inferring evolutionary trees.  We also plan on applying the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}, as well as Felsenstein's \citep{Felsenstein1981} pruning algorithm to larger data sets, in order to have a better idea of certain evolutionary behaviors.
+\begin{itemize}
+\item We will continue to work on polishing the algorithm for the symmetric model.  This will include counting the size of the subsets, 
+\item We plan to include our approaches in the GARLI \citep{GARLI} software package to be used in inferring evolutionary trees.  
+\item We will also apply the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}, as well as Felsenstein's \citep{Felsenstein1981} pruning algorithm to larger data sets, in order to have a better idea of certain evolutionary behaviors.
+\end{itemize}
 }
 
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
