@@ -186,15 +186,18 @@ Implementing a symmetric model specialization will enable considerations of char
 \item We will continue to optimize the algorithm for the symmetric model to reduce the memory and computational costs.
 \item We will test the specializations in software capable of using the general and specialized form of the algorithm.
 \item After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package, which is a widely-used software tool for inferring evolutionary trees.  
-\item We will adapt our testing program to perform the model adequacy approach of Waddell {\em et al.~}\citep{WaddellOP2009}. This will entail the calculation of goodness-of-fit statistics from the probabilities that our algorithms compute. Our implementation will provide the community of evolutionary biologist with a tool for assessing model adequacy on large phylogenetic trees.
+\item We will add calculation of goodness-of-fit statistics from the probabilities that our algorithms compute. 
+This will constitute an implementation of the method of Waddell {\em et al.~}\citep{WaddellOP2009} which can be used to assessing model adequacy on large phylogenetic trees.
 Assessing models of character evolution on large trees provides a more rigorous test of model adequacy.
 \end{compactitem}
+This work is being conducting according to the principles of open notebook science; all software, notes, and results are
+publicly viewable on \url{https://github.com/mtholder/PhyPatClassProb}
 }
 
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
 \smaller						% Make the whole text smaller
 \vspace{-0.4em}			% Save some space at the beginning
-The authors would like to thank NSF and the Initiative for Maximizing Student Diversity for funding.
+We would like to thank NSF and the Initiative for Maximizing Student Diversity for funding.
 } 
 
 \headerbox{References}{name=references,column=3,below=acknowledgements}{
