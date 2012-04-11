@@ -97,14 +97,14 @@
 
 \setlength\fboxsep{0pt}
 \setlength\fboxrule{0.5pt}
-	\fbox{
-		\begin{minipage}{6em}
+%	\fbox{
+%		\begin{minipage}{6em}
 			%\includegraphics[width=10em,height=4em]{colbud_logo}
 			%\includegraphics[width=4em,height=4em]{elte_logo} \\
 			%\includegraphics[width=10em,height=4em]{dynanets_logo}
 			\includegraphics[width=6em,height=6em]{imsdlogo}
-		\end{minipage}
-	}
+%		\end{minipage}
+%	}
 }
 
 \headerbox{Introduction}{name=intro,column=0,row=0}{
@@ -166,7 +166,7 @@ We validated our algorithm with the same data and confirmed very similar probabi
 \end{wrapfigure}
 We are in the process of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
 Many of the probability calculations return the same answer in these models.
-Exploiting the fact that distinct combinations that give the same result allows the answer to be calculated with fewer operations. 
+Exploiting the fact that distinct combinations give the same result allows the answer to be calculated with fewer operations. 
 We can sketch out a rough computational complexity for a symmetric version of the algorithm.
 The exact nature of the observed and downpass state sets do not need to considered.
 Rather, we can focus on the size of these sets.  
