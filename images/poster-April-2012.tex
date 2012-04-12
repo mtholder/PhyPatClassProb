@@ -116,7 +116,6 @@ Extending the morphological models of Lewis \citep{Lewis2001} to deal with many 
 Currently, applications of the approaches of Waddell {\em et al.~}\citep{WaddellOP2009} and Lewis\citep{Lewis2001} are limited because the only known methods for calculating the probability of a class of patterns involve either simulating a large amount of data or exhaustively considering every member of the class. Neither approach is feasible on large trees.
 
 We are developing {\bf efficient, dynamic programming algorithms} to calculate the probabilities of pattern classes in one pass down a phylogenetic tree. The algorithms include a general approach (applicable to any standard model of character evolution) as well as optimizations for the fully symmetric models (e.g. those of Lewis\citep{Lewis2001}). We are implementing these algorithms in open source software written in C++, and plan to include the approaches in the GARLI \citep{GARLI} software package for use in inferring evolutionary trees.
-%
 }
 
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
@@ -127,6 +126,8 @@ We are developing {\bf efficient, dynamic programming algorithms} to calculate t
 \item Add the algorithms to GARLI for use in phylogenetic inference
 %  This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software.
 \end{compactenum}
+\vskip .3em 
+$ $
 }
 
 \headerbox{A General Algorithm for Classes Based on Parsimony Length}{name=results,span=2,column=1,row=0}{
@@ -198,6 +199,8 @@ publicly viewable on \url{https://github.com/mtholder/PhyPatClassProb}
 \smaller						% Make the whole text smaller
 \vspace{-0.4em}			% Save some space at the beginning
 We would like to thank NSF and the Initiative for Maximizing Student Diversity for funding.
+\vskip .3em 
+$ $
 } 
 
 \headerbox{References}{name=references,column=3,below=acknowledgements}{
