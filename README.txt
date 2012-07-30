@@ -5,7 +5,7 @@ and model pair.
 
 Waddell, Ota, and Penny, 2009 develop a model adequacy assessment that uses
 these probabilities, but they approximated them using simulation.  The algorithm
-used here is to be described (Holder, in prep).
+used here is to be described (Koch and Holder, in prep).
 
 
 P. J. Waddell, R. Ota, and D. Penny, “Measuring Fit of Sequence Data to 
