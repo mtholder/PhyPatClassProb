@@ -5,7 +5,7 @@ for ((i=3; i < ${end_point}; ++i))
 do
     python  gen_data_set.py p ${i} > p${i}.nex
     echo pectinate${i}
-    time $invoc ./p${i}.nex 2>p${i}.err.txt >>p${i}.out.txt
+    time ${invoc} ./p${i}.nex 2>p${i}.err.txt >p${i}.out.txt
     if [ $? != 0 ]
     then
         cat p${i}.err.txt
@@ -14,7 +14,7 @@ do
 
     python  gen_data_set.py s ${i} > s${i}.nex
     echo symm${i}
-    time $invoc ./s${i}.nex 2>s${i}.err.txt >>s${i}.out.txt
+    time $invoc ./s${i}.nex 2>s${i}.err.txt >s${i}.out.txt
     if [ $? != 0 ]
     then
         cat s${i}.err.txt

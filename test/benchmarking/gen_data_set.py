@@ -9,17 +9,17 @@ nt = 2**power
 tree_string = 'TREE_HERE'
 br_len = '0.05'
 
-def gen_pect(tax_ind, depth):
+def gen_symm(tax_ind, depth):
 	if depth > 1:
-		left, tax_ind = gen_pect(tax_ind, depth - 1)
-		right, tax_ind = gen_pect(tax_ind, depth - 1)
+		left, tax_ind = gen_symm(tax_ind, depth - 1)
+		right, tax_ind = gen_symm(tax_ind, depth - 1)
 		ts = '(%s:%s,%s:%s)' % (left, br_len, right, br_len)
 		return ts, tax_ind
 	ts = '(t%d:%s,t%d:%s)' % (tax_ind, br_len, tax_ind + 1, br_len)
 	return ts, tax_ind + 2
 	
 if shape_arg == 's':
-	tree_string, ind = gen_pect(1, power)
+	tree_string, ind = gen_symm(1, power)
 elif shape_arg == 'p':
 	tree_string = '(t1:%s,t2:%s)' % (br_len, br_len)
 	for i in range(3, nt + 1):
