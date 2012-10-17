@@ -79,7 +79,7 @@ fi
 
 LIBS="$LIBS -lncl -lfatbeagle -lhmsbeagle"
 LDFLAGS="$LDFLAGS -L$NCL_LIB_DIR -L$BEAGLE_HOME/lib -L$PYTBEAGLEHON_HOME/lib"
-CPPFLAGS="-I$NCL_INC_DIR -I$PYTBEAGLEHON_HOME/include -I$BEAGLE_HOME/include/libhmsbeagle-1"
+CPPFLAGS="-I\$(top_srcdir) -I$NCL_INC_DIR -I$PYTBEAGLEHON_HOME/include -I$BEAGLE_HOME/include/libhmsbeagle-1"
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 

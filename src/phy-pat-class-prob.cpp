@@ -30,13 +30,13 @@ struct CommonInfo {
 		unsigned nRates;
 		unsigned pVecLen; // nStates * nRates;
 		BitField lastBitField;
-		
+
 		std::string alphabet;
 		std::vector<BitField> singleStateCodes;
 		// stateIndexToStateCode is probably always going to be identical to
-		//		singleStateCodes, but use stateIndexToStateCode when you need the 
+		//		singleStateCodes, but use stateIndexToStateCode when you need the
 		//		state codes for the fundamental states in order.
-		std::vector<BitField> stateIndexToStateCode; 
+		std::vector<BitField> stateIndexToStateCode;
 		std::vector<BitField> multiStateCodes;
 		ScopedDblThreeDMatrix firstMatVec;
 		ScopedDblThreeDMatrix secondMatVec;
@@ -44,11 +44,11 @@ struct CommonInfo {
 		std::vector<double> rates;
 		std::vector<double> rateProb;
 		std::vector<double> categStateProb;
-		
+
 		VMaskToVecMaskPair pairsForIntersectionForEachDownPass;
 		VMaskToVecMaskPair pairsForUnionForEachDownPass;
 		BitFieldMatrix statesSupersets;
-		
+
 		unsigned getNumStates(BitField mask) const {
 			return stateCodeToNumStates[mask];
 		}
@@ -56,23 +56,23 @@ struct CommonInfo {
 			return this->stateCodesToSymbols.find(sc)->second;
 		}
 		void initialize(const std::string & symbols);
-	
+
 		void readModel(const std::vector<std::string> & optVec);
-	
+
 		DSCTModelObj * dsct_model_obj;
-	
+
 		std::vector<double> scaledEdgeLengths;
 		std::vector<int> modelIndexVector;
 		long likeCalcHandle;
-		
-		
+
+
 		void writeModel(std::ostream & out) const;
 	private:
 		void calcEigenSolution();
-	
+
 		std::vector<unsigned> stateCodeToNumStates;
 		std::map<BitField, std::string> stateCodesToSymbols;
-		
+
 		ScopedDblTwoDMatrix relRateMat;
 		std::vector<double> stateFreqVector;
 };
@@ -92,7 +92,7 @@ std::set<BitField> toElements(BitField sc) {
 	return ret;
 }
 
-void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, 
+void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec,
 				  NodeIDToProbInfo & nodeIDToProbInfo) {
 
 	for (std::vector<const NxsSimpleNode *>::const_reverse_iterator ndIt = preorderVec.rbegin();
@@ -115,16 +115,16 @@ void CommonInfo::initialize(const std::string & symbols) {
 	this->nStates = this->alphabet.length();
 	this->nRates = 1; //@TEMP no rate het
 	this->pVecLen = this->nRates*this->nStates;
-	
+
 	this->rates.assign(this->nRates, 1.0); //@TEMP no rate het
 	this->rateProb.assign(this->nRates, 1.0/this->nRates); // @TEMP equally-sized rate categories
 	this->categStateProb.assign(this->pVecLen, 1.0/((double)this->pVecLen)) ;
-	
+
 	this->singleStateCodes.clear();
 	this->multiStateCodes.clear();
 	this->stateCodesToSymbols.clear();
-	
-	
+
+
 	unsigned lbfU = (1 << this->nStates) - 1;
 	this->stateCodeToNumStates.assign(lbfU + 1, 0);
 	this->lastBitField = BitField(lbfU);
@@ -147,13 +147,13 @@ void CommonInfo::initialize(const std::string & symbols) {
 			this->stateCodeToNumStates.at(sc) = sbf.size();
 			this->stateCodesToSymbols[sc] = sym;
 		}
-		
-		
-		
+
+
+
 		if (sc == this->lastBitField)
 			break;
 	}
-	
+
 	this->pairsForUnionForEachDownPass.clear();
 	this->pairsForUnionForEachDownPass.resize(this->lastBitField + 1);
 	this->pairsForIntersectionForEachDownPass.clear();
@@ -179,7 +179,7 @@ void CommonInfo::initialize(const std::string & symbols) {
 				forIntersections.push_back(MaskPair(leftSC, rightSC));
 			}
 		}
-		
+
 		if (sc == this->lastBitField)
 			break;
 
@@ -195,38 +195,47 @@ void CommonInfo::initialize(const std::string & symbols) {
 			if (ss == this->lastBitField)
 				break;
 		}
-		
+
 		if (sc == this->lastBitField)
 			break;
 
 	}
 
 
-	
-	std::cerr << "from line " << __LINE__ << ":\n";
+
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n";
+#	endif
 	for (sc = 1;;++sc) {
-		std::cerr << "Combos with unions that lead to " << this->toSymbol(sc) << ":";
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "Combos with unions that lead to " << this->toSymbol(sc) << ":";
+#		endif
 		const VecMaskPair & forUnions = this->pairsForUnionForEachDownPass[sc];
-		for (VecMaskPair::const_iterator fuIt = forUnions.begin(); fuIt != forUnions.end(); ++fuIt) {
-			std::cerr << " (\"" << this->toSymbol(fuIt->first);
-			std::cerr << "\", \"" << this->toSymbol(fuIt->second);
-			std::cerr << "\")   ";
-		}
-		std::cerr << "\n";
+#		if defined DEBUGGING_OUTPUT
+			for (VecMaskPair::const_iterator fuIt = forUnions.begin(); fuIt != forUnions.end(); ++fuIt) {
+				std::cerr << " (\"" << this->toSymbol(fuIt->first);
+				std::cerr << "\", \"" << this->toSymbol(fuIt->second);
+				std::cerr << "\")	";
+			}
+			std::cerr << "\n";
 
-		std::cerr << "Combos with intersections that lead to " << this->toSymbol(sc) << ":";
+			std::cerr << "Combos with intersections that lead to " << this->toSymbol(sc) << ":";
+#		endif
 		const VecMaskPair & forIntersections = this->pairsForIntersectionForEachDownPass[sc];
-		for (VecMaskPair::const_iterator fuIt = forIntersections.begin(); fuIt != forIntersections.end(); ++fuIt) {
-			std::cerr << " (\"" << this->toSymbol(fuIt->first);
-			std::cerr << "\", \"" << this->toSymbol(fuIt->second);
-			std::cerr << "\")   ";
-		}
-		std::cerr << "\n";
+#		if defined DEBUGGING_OUTPUT
+			for (VecMaskPair::const_iterator fuIt = forIntersections.begin(); fuIt != forIntersections.end(); ++fuIt) {
+				std::cerr << " (\"" << this->toSymbol(fuIt->first);
+				std::cerr << "\", \"" << this->toSymbol(fuIt->second);
+				std::cerr << "\")	";
+			}
+			std::cerr << "\n";
+#		endif
+
 		if (sc == this->lastBitField)
 			break;
 	}
-	
-	
+
+
 }
 
 
@@ -246,12 +255,12 @@ void ParsInfo::calculateForInternal(const ParsInfo & leftData, const ParsInfo & 
 	this->allSeen = &this->allSeenOwned[0];
 	this->scoreOwned.resize(numPatterns);
 	this->score = &this->scoreOwned[0];
-	const BitField * leftDown = leftData.downPass; 
-	const BitField * leftAll = leftData.allSeen; 
-	const unsigned * leftScore = leftData.score; 
-	const BitField * rightDown = rightData.downPass; 
-	const BitField * rightAll = rightData.allSeen; 
-	const unsigned * rightScore = rightData.score; 
+	const BitField * leftDown = leftData.downPass;
+	const BitField * leftAll = leftData.allSeen;
+	const unsigned * leftScore = leftData.score;
+	const BitField * rightDown = rightData.downPass;
+	const BitField * rightAll = rightData.allSeen;
+	const unsigned * rightScore = rightData.score;
 	for (unsigned i = 0; i < numPatterns; ++i, ++leftDown, ++leftAll, ++leftScore, ++rightDown, ++rightAll, ++rightScore) {
 		const BitField lrIntersection = (*leftDown) & (*rightDown);
 		const unsigned accumulScore = *leftScore + *rightScore;
@@ -281,7 +290,7 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 	this->byParsScore.resize(1);
 	ProbForParsScore & forZeroSteps = this->byParsScore[0];
 	unsigned stateIndex = 0;
-	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
 		 	scIt != blob.singleStateCodes.end();
 		 	++scIt, ++stateIndex) {
 		const BitField sc = *scIt;
@@ -293,21 +302,23 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 	this->nLeavesBelow = 1;
 }
 
-void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen, 
+void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 					   const ProbInfo & rightPI, double rightEdgeLen,
 					   TiMatFunc fn,
 					   const CommonInfo & blob) {
-	std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculateSymmetric \n" ;
-	
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculateSymmetric \n" ;
+#	endif
+
 	// fn will fill the prob matrix (blob.firstMatVec) for the appropriate branch length
 	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
 	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
 	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
 	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
-	
+
 	// now leftPMatVec and rightPMatVec correctly populated with transition probabilities
-	
-	
+
+
 	const unsigned int leftMaxP = leftPI.getMaxParsScore();
 	const unsigned int rightMaxP = rightPI.getMaxParsScore();
 	const unsigned int maxParsScore = 1 + leftMaxP + rightMaxP;
@@ -323,7 +334,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
 		const ProbForParsScore & rightFPS = rightPI.getByParsScore(0);
 		ProbForParsScore & forZeroSteps = this->byParsScore[0];
-		
+
 		unsigned stateIndex = 0;
 		const BitField sc = 1;
 
@@ -334,16 +345,16 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 
 		std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
 		toFillVec.assign(blob.nRates*blob.nStates, 0.0);
-		
+
 		addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 	}
-	
+
 	unsigned currScore = 1;
 	std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
 	bool scObserved = true;
 	ProbForParsScore & forCurrScore = this->byParsScore[currScore];
 	// if the ancestor has state set of {0}, and currScore = 1 then
-	// 	one child must display a single state, and the other must have 2 states observed 
+	// 	one child must display a single state, and the other must have 2 states observed
 	BitField downPass = 1;
 	if (true) { // braces for reducing the scoping of variables, only
 		unsigned int leftAccum = 0;
@@ -366,7 +377,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 				assert(rightM2PBS != 0L);
 				const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 				assert(rightProbs != 0L);
-				
+
 				const BitField ancAllField = (1|2);
 				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass.at(downPass);
 				std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
@@ -378,7 +389,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 			}
 			std::swap(leftFPS, rightFPS);
 		}
-	}		
+	}
 	// if the ancestor has state set of {0,1}, and currScore = 1 then
 	// 	both children must display a single state.
 	downPass = 3;
@@ -398,7 +409,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	assert(leftProbs != 0L);
 	const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 	assert(rightProbs != 0L);
-	
+
 	// even though, we are accessing state set {0} for each child, we are using
 	// symmetry to treat one of the children as having state {1}.
 	// thus, our ancestor has observed state set {0, 1} (or 3 in BitField notation).
@@ -417,18 +428,18 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
     stateCodeTranslationVec[1] = 0;
 	addToAncProbVecSymmetric(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, stateCodeTranslationVec, blob);
 	addToAncProbVecSymmetric(*ancVec, rightPMatVec, rightProbs, leftPMatVec, leftProbs, stateCodeTranslationVec, blob);
-	
-/*	
+
+/*
 	for (BitField downPass = 1; ; ++downPass) {
 		const unsigned numStatesInMask = blob.getNumStates(downPass);
 		if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
-		
+
 			MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
-			
+
 			if (blob.getNumStates(downPass) > 1) {
 				std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
 				const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
-				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass,
 										  forUnions,
 										  leftPI,
 										  leftPMatVec,
@@ -443,7 +454,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 			if (leftMaxP + rightMaxP >= currScore) {
 				std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
 				const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
-				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+				bool didCalculations = this->allCalcsForAllPairs(forCurrScoreDownPass,
 										  forIntersections,
 										  leftPI,
 										  leftPMatVec,
@@ -464,20 +475,24 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	if (scObserved)
 		obsMaxParsScore = currScore;
 
-	for (currScore = 2;  currScore <= maxParsScore; ++currScore) {
+	for (currScore = 2;	 currScore <= maxParsScore; ++currScore) {
+#if defined DEBUGGING_OUTPUT
 		std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+#endif
 		bool scObserved = false;
 		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
 		for (BitField downPass = 1; ; ++downPass) {
 			const unsigned numStatesInMask = blob.getNumStates(downPass);
 			if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
-			
+
 				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
-				
+
 				if (blob.getNumStates(downPass) > 1) {
-					std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+#					endif
 					const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
-					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
 											  forUnions,
 											  leftPI,
 											  leftPMatVec,
@@ -488,9 +503,11 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 											  blob) || scObserved;
 				}
 				if (leftMaxP + rightMaxP >= currScore) {
-					std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+#					endif
 					const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
-					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
 											  forIntersections,
 											  leftPI,
 											  leftPMatVec,
@@ -509,21 +526,25 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 			obsMaxParsScore = currScore;
 	}
 	if (obsMaxParsScore < maxParsScore) {
-		std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+#		endif
 		this->byParsScore.resize(obsMaxParsScore + 1);
 	}
 }
 
-void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen, 
+void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 					   const ProbInfo & rightPI, double rightEdgeLen,
 					   TiMatFunc fn,
 					   const CommonInfo & blob) {
-	std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculate \n" ;
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculate \n" ;
+#	endif
 	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
 	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
 	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
 	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
-	
+
 	const unsigned int leftMaxP = leftPI.getMaxParsScore();
 	const unsigned rightMaxP = rightPI.getMaxParsScore();
 	const unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
@@ -536,10 +557,10 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
 		const ProbForParsScore & rightFPS = rightPI.getByParsScore(0);
 		ProbForParsScore & forZeroSteps = this->byParsScore[0];
-		
-		
+
+
 		unsigned stateIndex = 0;
-		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
 				scIt != blob.singleStateCodes.end();
 				++scIt, ++stateIndex) {
 			const BitField sc = *scIt;
@@ -547,29 +568,33 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 			assert(leftProbs != 0L);
 			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndObsMask(sc, sc);
 			assert(rightProbs != 0L);
-	
+
 			std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
 			toFillVec.assign(blob.nRates*blob.nStates, 0.0);
-			
+
 			addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 		}
 	}
-	
+
 	// order N
 	for (unsigned currScore = 1; currScore <= maxParsScore; ++currScore) {
-		std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+#		endif
 		bool scObserved = false;
 		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
 		for (BitField downPass = 1; ; ++downPass) {
 			const unsigned numStatesInMask = blob.getNumStates(downPass);
 			if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
-			
+
 				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
-				
+
 				if (blob.getNumStates(downPass) > 1) {
-					std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+#					endif
 					const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
-					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
 											  forUnions,
 											  leftPI,
 											  leftPMatVec,
@@ -580,9 +605,11 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 											  blob) || scObserved;
 				}
 				if (leftMaxP + rightMaxP >= currScore) {
-					std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+#					endif
 					const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
-					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass, 
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
 											  forIntersections,
 											  leftPI,
 											  leftPMatVec,
@@ -601,14 +628,16 @@ void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
 			obsMaxParsScore = currScore;
 	}
 	if (obsMaxParsScore < maxParsScore) {
-		std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+#		endif
 		this->byParsScore.resize(obsMaxParsScore + 1);
 	}
 }
 
 // \returns true if there were probabalities that were summed
 bool ProbInfo::allCalcsForAllPairs(
-			MaskToProbsByState & forCurrScoreDownPass, 
+			MaskToProbsByState & forCurrScoreDownPass,
 			const VecMaskPair & pairVec,
 			const ProbInfo & leftPI,
 			const double *** leftPMatVec,
@@ -624,7 +653,9 @@ bool ProbInfo::allCalcsForAllPairs(
 	for (VecMaskPair::const_iterator fuIt = pairVec.begin(); fuIt != pairVec.end(); ++fuIt) {
 		const BitField leftDown = fuIt->first;
 		const BitField rightDown = fuIt->second;
-		std::cerr << "from line: " << __LINE__<< ": "; std::cerr << "leftDown = " << blob.toSymbol(leftDown) << " rightDown = " << blob.toSymbol(rightDown) << '\n';
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< ": "; std::cerr << "leftDown = " << blob.toSymbol(leftDown) << " rightDown = " << blob.toSymbol(rightDown) << '\n';
+#		endif
 		assert(leftDown > 0);
 		assert(rightDown > 0);
 		if (doingIntersection) {
@@ -636,20 +667,24 @@ bool ProbInfo::allCalcsForAllPairs(
 		const unsigned leftMinAccum = blob.getNumStates(leftDown) - 1;
 		const unsigned rightMinAccum = blob.getNumStates(rightDown) - 1;
 		if (leftMinAccum + rightMinAccum > accumScore) {
-			std::cerr << "from line: " << __LINE__<< ": minScore exceed required score\n";
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "from line: " << __LINE__<< ": minScore exceed required score\n";
+#			endif
 			continue;
 		}
 		const unsigned acMaxLeftAccum = std::min(accumScore - rightMinAccum, leftMaxP);
 		const unsigned acMaxRightAccum = std::min(accumScore - leftMinAccum, rightMaxP);
 		const unsigned acMinLeftAccum = std::max(leftMinAccum, accumScore - acMaxRightAccum);
 		if (false) {
-			std::cerr << "accumScore = " << accumScore << '\n';
-			std::cerr << "accumScore = " << accumScore << '\n';
-			std::cerr << "leftMinAccum = " << leftMinAccum << '\n';
-			std::cerr << "rightMinAccum = " << rightMinAccum << '\n';
-			std::cerr << "acMaxLeftAccum = " << acMaxLeftAccum << '\n';
-			std::cerr << "acMaxRightAccum = " << acMaxRightAccum << '\n';
-			std::cerr << "acMinLeftAccum = " << acMinLeftAccum << '\n';
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "accumScore = " << accumScore << '\n';
+				std::cerr << "accumScore = " << accumScore << '\n';
+				std::cerr << "leftMinAccum = " << leftMinAccum << '\n';
+				std::cerr << "rightMinAccum = " << rightMinAccum << '\n';
+				std::cerr << "acMaxLeftAccum = " << acMaxLeftAccum << '\n';
+				std::cerr << "acMaxRightAccum = " << acMaxRightAccum << '\n';
+				std::cerr << "acMinLeftAccum = " << acMinLeftAccum << '\n';
+#			endif
 		}
 		// order N
 		for (unsigned leftAccum = acMinLeftAccum; leftAccum <= acMaxLeftAccum; ++leftAccum) {
@@ -658,24 +693,32 @@ bool ProbInfo::allCalcsForAllPairs(
 			const ProbForParsScore & leftFPS = leftPI.getByParsScore(leftAccum);
 			const MaskToProbsByState * leftM2PBS = leftFPS.getMapPtrForDownPass(leftDown);
 			if (leftM2PBS == 0L) {
-				std::cerr << "from line: " << __LINE__<< ": left child empty row. Skipping...\n";
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ": left child empty row. Skipping...\n";
+#				endif
 				continue;
 			}
 			const ProbForParsScore & rightFPS = rightPI.getByParsScore(rightAccum);
 			const MaskToProbsByState * rightM2PBS = rightFPS.getMapPtrForDownPass(rightDown);
 			if (rightM2PBS == 0L) {
-				std::cerr << "from line: " << __LINE__<< ": right child empty row. Skipping...\n";
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ": right child empty row. Skipping...\n";
+#				endif
 				continue;
 			}
 			const BitFieldRow & leftSSRow = blob.statesSupersets[leftDown];
 			// order (2^k)
 			for (BitFieldRow::const_iterator lasIt = leftSSRow.begin(); lasIt != leftSSRow.end(); ++lasIt) {
 				const BitField leftAllStates = *lasIt;
-				std::cerr << "from line: " << __LINE__<< ":  leftAllStates="  << blob.toSymbol(leftAllStates) << '\n';
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ":	 leftAllStates="  << blob.toSymbol(leftAllStates) << '\n';
+#				endif
 				const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
 				if (leftProbs == 0L) {
-					std::cerr << "from line: " << __LINE__<< ": left child empty bin. Skipping...\n";
-					continue; 
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": left child empty bin. Skipping...\n";
+#					endif
+					continue;
 				}
 				const BitFieldRow & rightSSRow = blob.statesSupersets[rightDown];
 				// order (2^k)
@@ -685,10 +728,10 @@ bool ProbInfo::allCalcsForAllPairs(
 					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 					if (rightProbs == 0L) {
 //						std::cerr << "from line: " << __LINE__<< ": right child empty bin. Skipping...\n";
-						continue; 
+						continue;
 					}
 					const BitField ancAllField = (rightAllStates|leftAllStates);
-					
+
 					std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
 					if (ancVec == 0L) {
 						ancVec = &(forCurrScoreDownPass[ancAllField]);
@@ -707,7 +750,7 @@ bool ProbInfo::allCalcsForAllPairs(
 }
 
 
-void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec, 
+void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec,
 		const double *** leftPMatVec, const std::vector<double> * leftProbs,
 		const double *** rightPMatVec, const std::vector<double> * rightProbs,
 		const std::vector<unsigned int> & rightChildStateCodeTranslation,
@@ -720,22 +763,24 @@ void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec,
 		// this code looks up the correct transition prob matrix
 		const double ** leftPMat = leftPMatVec[r];
 		const double ** rightPMat = rightPMatVec[r];
-		
-		
+
+
 		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
 			double leftProb = 0.0;
 			double rightProb = 0.0;
 			for (unsigned desState = 0; desState < blob.nStates; ++desState) {
-				
+
 				const double leftTiProb = leftPMat[ancState][desState];
 				const double leftAccumProb = (*leftProbs)[rOffset + desState];
 				leftProb += leftTiProb*leftAccumProb;
-				
-				
+
+
 				const unsigned int translatedState = rightChildStateCodeTranslation[desState];
 				const double rightTiProb = rightPMat[ancState][translatedState];
 				const double rightAccumProb = (*rightProbs)[rOffset + desState];
-				std::cerr << "addToAncProbVecSymmetric tr = " << translatedState << " des " << desState << " rightTiProb= " << rightTiProb << " rightAccumProb = " << rightAccumProb <<'\n';
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "addToAncProbVecSymmetric tr = " << translatedState << " des " << desState << " rightTiProb= " << rightTiProb << " rightAccumProb = " << rightAccumProb <<'\n';
+#				endif
 				rightProb += rightTiProb*rightAccumProb;
 			}
 			pVec[rOffset + ancState] += leftProb*rightProb;
@@ -744,7 +789,7 @@ void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec,
 	}
 }
 
-void ProbInfo::addToAncProbVec(std::vector<double> & pVec, 
+void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 		const double *** leftPMatVec, const std::vector<double> * leftProbs,
 		const double *** rightPMatVec, const std::vector<double> * rightProbs,
 		const CommonInfo & blob) {
@@ -756,8 +801,8 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 		// this code looks up the correct transition prob matrix
 		const double ** leftPMat = leftPMatVec[r];
 		const double ** rightPMat = rightPMatVec[r];
-		
-		
+
+
 		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
 			double leftProb = 0.0;
 			double rightProb = 0.0;
@@ -765,9 +810,9 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 				const double leftTiProb = leftPMat[ancState][desState];
 				const double leftAccumProb = (*leftProbs)[rOffset + desState];
 				leftProb += leftTiProb*leftAccumProb;
-				
-				
-				
+
+
+
 				const double rightTiProb = rightPMat[ancState][desState];
 				const double rightAccumProb = (*rightProbs)[rOffset + desState];
 				rightProb += rightTiProb*rightAccumProb;
@@ -779,7 +824,9 @@ void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
 }
 
 void JCTiMat(double edgeLength, TiMat pMat ) {
-	std::cerr << "JCTiMat edgeLength = " << edgeLength << '\n';
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "JCTiMat edgeLength = " << edgeLength << '\n';
+#	endif
 	const double exp_term = exp(-(4.0/3.0)*edgeLength);
 	const double prob_change = 0.25 - 0.25*exp_term;
 	const double prob_nochange = 0.25 + 0.75*exp_term;
@@ -800,14 +847,20 @@ void JCTiMat(double edgeLength, TiMat pMat ) {
 	pMat[3][1] = prob_change;
 	pMat[3][2] = prob_change;
 	pMat[3][3] = prob_nochange;
-	std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
+#	endif
 }
 
 void JCMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 	assert(gBlob);
-	std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
+#	endif
 	for (unsigned i = 0; i < gBlob->rates.size(); ++i) {
-		std::cerr << "JCMulitCatTiMat gBlob->rates[" << i << "] = " << gBlob->rates[i] << '\n';
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "JCMulitCatTiMat gBlob->rates[" << i << "] = " << gBlob->rates[i] << '\n';
+#		endif
 		JCTiMat(edgeLength*(gBlob->rates[i]), pMatVec[i]); //@TEMP JC
 	}
 }
@@ -815,24 +868,30 @@ void JCMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 void GenericMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 	assert(gBlob);
 	int eigenIndex = 0;
-    int numToCalc = gBlob->nRates;
-    gBlob->scaledEdgeLengths.resize(gBlob->nRates);
+	int numToCalc = gBlob->nRates;
+	gBlob->scaledEdgeLengths.resize(gBlob->nRates);
 	gBlob->modelIndexVector.resize(gBlob->nRates);
-	std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
-    for (int i = 0; i < gBlob->nRates; ++i) {
-	    gBlob->scaledEdgeLengths[i] = edgeLength*gBlob->rates[i];
-		std::cerr << "GenericMulitCatTiMat rates[" << i << "] = " << gBlob->rates[i] << '\n';
-    	gBlob->modelIndexVector[i] = i;
-    }
-    int rc = calcPrMatsForHandle(gBlob->likeCalcHandle, eigenIndex, numToCalc, &(gBlob->scaledEdgeLengths[0]), &(gBlob->modelIndexVector[0]));
-    if (rc != 0) {
-        throw NxsException("Call to calcPrMatsForHandle failed");
-    }
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
+#	endif
+	for (int i = 0; i < gBlob->nRates; ++i) {
+		gBlob->scaledEdgeLengths[i] = edgeLength*gBlob->rates[i];
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "GenericMulitCatTiMat rates[" << i << "] = " << gBlob->rates[i] << '\n';
+#		endif
+		gBlob->modelIndexVector[i] = i;
+	}
+	int rc = calcPrMatsForHandle(gBlob->likeCalcHandle, eigenIndex, numToCalc, &(gBlob->scaledEdgeLengths[0]), &(gBlob->modelIndexVector[0]));
+	if (rc != 0) {
+		throw NxsException("Call to calcPrMatsForHandle failed");
+	}
 	for (int i = 0; i < gBlob->nRates; ++i) {
 		fetchPrMat(gBlob->likeCalcHandle, i, pMatVec[i][0]);
-		std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "scaled edgeLength = " << gBlob->scaledEdgeLengths[i] << " probs = " << pMatVec[i][0][0] << ", " << pMatVec[i][0][1] << "\n";
-    }
-    
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "scaled edgeLength = " << gBlob->scaledEdgeLengths[i] << " probs = " << pMatVec[i][0][0] << ", " << pMatVec[i][0][1] << "\n";
+#		endif
+	}
+
 }
 
 unsigned PatternSummary::incrementCount(unsigned s, BitField m, unsigned toAdd) {
@@ -848,13 +907,13 @@ unsigned PatternSummary::incrementCount(unsigned s, BitField m, unsigned toAdd) 
 	mIt->second = toAdd + prev;
 	return toAdd + prev;
 }
-		
+
 void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 	const BitsToCount & constPatsMap = this->byParsScore[0];
 	for (std::vector<BitField>::const_iterator cIt = blob.singleStateCodes.begin(); cIt != blob.singleStateCodes.end(); ++cIt) {
 		BitsToCount::const_iterator queryIt = constPatsMap.find(*cIt);
 		unsigned obsCount = (queryIt == constPatsMap.end() ? 0 : queryIt->second);
-		out << "Observed steps = 0 states = " << blob.toSymbol(*cIt) << " count = " << obsCount  << '\n';
+		out << "Observed steps = 0 states = " << blob.toSymbol(*cIt) << " count = " << obsCount	 << '\n';
 	}
 	for (unsigned score = 1; score < this->byParsScore.size(); ++score) {
 		const BitsToCount & currPatsMap = this->byParsScore[score];
@@ -886,7 +945,9 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 			const NxsSimpleNode * nd = preorderVec[ndInd];
 			std::vector<NxsSimpleNode *> children = nd->GetChildren();
 			const unsigned numChildren = children.size();
-			std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculatePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculatePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#			endif
 			NodeID currNdId(nd, 0);
 			if (numChildren == 0) {
 				nodeIDToProbInfo[currNdId] = &tipProbInfo;
@@ -896,7 +957,7 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 					throw NxsException("Trees of degree 2 are not supported, yet\n");
 				ProbInfo * currProbInfo = new ProbInfo(); // allocation
 				nodeIDToProbInfo[currNdId] = currProbInfo;
-				
+
 				const NxsSimpleNode * leftNd = children[0];
 				const NxsSimpleNode * rightNd = children[1];
 				NodeIDToProbInfo::const_iterator leftPIIt= nodeIDToProbInfo.find(NodeID(leftNd, 0));
@@ -926,8 +987,8 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 					delete rightPI;
 					nodeIDToProbInfo[NodeID(rightNd, 0)] = 0L;
 				}
-				
-				
+
+
 				if (numChildren > 2) {
 					if (nd != preorderVec[0] || numChildren > 3)
 						throw NxsException("Parsimony scoring on non-binary trees is not supported, yet\n");
@@ -954,10 +1015,10 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 			}
 		}
 		assert(rootProbInfo != 0L);
-		
+
 		const ExpectedPatternSummary eps(*rootProbInfo, blob);
 		eps.write(std::cout, blob);
-		
+
 	}
 	catch (...) {
 		freeProbInfo(preorderVec, nodeIDToProbInfo);
@@ -972,7 +1033,7 @@ void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream
 // marginalize over downpass set, rate categories, and anc states
 ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, const CommonInfo & blob) {
 	if (blob.isSymmetric) {
-		
+
 		const unsigned maxNumSteps = rootProbInfo.getMaxParsScore();
 		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
 		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
@@ -987,13 +1048,13 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 			assert(pIt != pVec->end());
 			patClassProb += (*wtIt) * (*pIt);
 		}
-		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
 				scIt != blob.singleStateCodes.end();
 				++scIt) {
 			 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
 			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
 		}
-		
+
 		// all other number of states
 		for (unsigned i = 1; i <= maxNumSteps; ++i) {
 			const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
@@ -1023,7 +1084,7 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 		std::vector<double> emptyRow(blob.lastBitField + 1, 0.0);
 		this->probsByStepsThenObsStates.resize(maxNumSteps + 1, emptyRow);
 		const ProbForParsScore & constFPS = rootProbInfo.getByParsScore(0);
-		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
 				scIt != blob.singleStateCodes.end();
 				++scIt) {
 			 const BitField downPass = *scIt; // for the constant pattern, there will only be one downpass and allstates
@@ -1038,7 +1099,7 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 			 }
 			 this->probsByStepsThenObsStates[0][downPass] = patClassProb;
 		}
-		
+
 		for (unsigned i = 1; i <= maxNumSteps; ++i) {
 			const ProbForParsScore & fps = rootProbInfo.getByParsScore(i);
 			 for (BitField downPass= 1; ;++downPass) {
@@ -1064,17 +1125,17 @@ ExpectedPatternSummary::ExpectedPatternSummary(const ProbInfo & rootProbInfo, co
 	}
 }
 void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
-	
+
 	const unsigned maxNumSteps = this->probsByStepsThenObsStates.size() - 1;
 	const std::vector<double> & constFPS = this->probsByStepsThenObsStates[0];
 	double totalProb = 0.0;
-	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin(); 
+	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
 		 	scIt != blob.singleStateCodes.end();
 		 	++scIt) {
 		 out << "Expected steps = 0 states = " << blob.toSymbol(*scIt) << " prob = " << constFPS[*scIt] << '\n';
 		 totalProb += constFPS[*scIt];
 	}
-	
+
 	for (unsigned i = 1; i <= maxNumSteps; ++i) {
 		const std::vector<double> & currFPS = this->probsByStepsThenObsStates[i];
 		for (BitField obsStates= 1; ;++obsStates) {
@@ -1097,7 +1158,7 @@ void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) 
 void classifyObservedDataIntoClasses(
 		const NxsSimpleTree & tree,
 		const BitFieldMatrix &mat,
-		const int * pwPtr, 
+		const int * pwPtr,
 		std::ostream & out,
 		PatternSummary *summary,
 		const CommonInfo & blob) {
@@ -1110,7 +1171,9 @@ void classifyObservedDataIntoClasses(
 		const NxsSimpleNode * nd = preorderVec[ndInd];
 		std::vector<NxsSimpleNode *> children = nd->GetChildren();
 		const unsigned numChildren = children.size();
-		std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In classifyObservedDataIntoClasses at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In classifyObservedDataIntoClasses at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#		endif
 		NodeID currNdId(nd, 0);
 		ParsInfo & currParsInfo = nodeIDToParsInfo[currNdId];
 		if (numChildren == 0) {
@@ -1127,7 +1190,7 @@ void classifyObservedDataIntoClasses(
 			NodeIDToParsInfo::const_iterator rightPIIt= nodeIDToParsInfo.find(NodeID(rightNd, 0));
 			assert(rightPIIt != nodeIDToParsInfo.end());
 			currParsInfo.calculateForInternal(leftPIIt->second, rightPIIt->second);
-			
+
 			if (numChildren > 2) {
 				if (nd != preorderVec[0] || numChildren > 3)
 					throw NxsException("Parsimony scoring on non-binary trees is not supported, yet\n");
@@ -1144,7 +1207,9 @@ void classifyObservedDataIntoClasses(
 		}
 	}
 	assert(rootParsInfo != 0L);
-	std::cerr << "from line " << __LINE__ << ":\n" ; rootParsInfo->write(std::cerr);
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n" ; rootParsInfo->write(std::cerr);
+#	endif
 	if (summary) {
 		summary->clear();
 		for (unsigned p = 0; p < rootParsInfo->size(); ++p) {
@@ -1170,7 +1235,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 			scratchSet.insert(i);
 		toInclude = & scratchSet;
 	 }
-	
+
 	std::set <const NxsDiscreteDatatypeMapper * > usedMappers;
 	for (NxsUnsignedSet::const_iterator indIt = toInclude->begin(); indIt != toInclude->end(); ++indIt) {
 		unsigned charIndex = *indIt;
@@ -1181,7 +1246,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 		throw NxsException("too many mappers");
 	if (usedMappers.empty())
 		throw NxsException("no mappers - or empty charset");
-	
+
 
 	const NxsDiscreteDatatypeMapper & mapper = **usedMappers.begin();
 
@@ -1189,7 +1254,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 	const unsigned nStates =  mapper.GetNumStates();
 	if (nStates > MAX_NUM_STATES)
 		throw NxsException("MAX_NUM_STATES exceeded.  Recompile with a larger datatype for BitField.\n");
-	
+
 	for (NxsDiscreteStateCell i = 0; i < (NxsDiscreteStateCell)nStates; ++i) {
 		if (mapper.GetStateSetForCode(i).size() != 1)
 			throw NxsException("Expecting the first states to correspond to state sets with size 1");
@@ -1202,7 +1267,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 	NCL_ASSERT((int)NXS_MISSING_CODE < 0);
 	NCL_ASSERT((int)NXS_GAP_STATE_CODE < 0);
 
-	
+
 	const unsigned nTaxa = cb.GetNTax();
 	const unsigned includedNChar = toInclude->size();
 	mat.resize(nTaxa);
@@ -1214,7 +1279,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 			errormsg << "Empty row encountered for taxon " << (1+i) << ". Missing data is not supported.\n";
 			throw NxsException(errormsg);
 		}
-		unsigned j = 0; 
+		unsigned j = 0;
 		for (NxsUnsignedSet::const_iterator tIncIt = toInclude->begin(); tIncIt != toInclude->end(); ++tIncIt, ++j) {
 			const NxsDiscreteStateCell & cell = row.at(*tIncIt);
 			if (cell < 0 || cell >= (NxsDiscreteStateCell) nStates) {
@@ -1226,7 +1291,7 @@ std::string convertToBitFieldMatrix(const NxsCharactersBlock & cb, BitFieldMatri
 		}
 	}
 	return fundamentalSymbols;
-}	
+}
 
 void writeBitFieldMatrix(std::ostream & out, const BitFieldMatrix & bitFieldMatrix) {
 	for (unsigned i = 0; i < bitFieldMatrix.size(); ++i) {
@@ -1257,15 +1322,15 @@ void CommonInfo::calcEigenSolution() {
 		qMatAlias[a][a] = -offDiagSum;
 		diagWeightedSum += stateFreqArray[a]*offDiagSum;
 	}
-	
+
 	for (unsigned a = 0; a < this->nStates; ++a) {
 		for (unsigned d = 0; d < this->nStates; ++d) {
 			qMatAlias[a][d] /= diagWeightedSum;
 		}
 	}
-	
+
 	setQMatForHandle(this->likeCalcHandle, 0, const_cast<const double **>(qMatAlias));
-    
+
     int rc = calc_eigen_mat(dsct_model_obj, 0);
     if (rc == 0) {
     	errormsg << "recalc_eigen_mat failed";
@@ -1309,8 +1374,8 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 		}
 	}
 	this->stateFreqVector.assign(this->nStates, 1.0/this->nStates);
-	
-	
+
+
 	for (std::vector<std::string>::const_iterator ovIt = optVec.begin(); ovIt != optVec.end(); ++ovIt) {
 		const std::string opt = *ovIt;
 		assert(opt[0] == '-');
@@ -1325,12 +1390,14 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 		double x, y;
 		int el = 0;
 		const int numRelRates = (((this->nStates - 1)*(this->nStates))/2) - 1;
-		std::cerr << "flagWithDash = " << flagWithDash << "   val = " << val << '\n';
-		std::cerr << "parsedToDoubles v =";
-		for (std::vector<double>::const_iterator vIt = v.begin(); vIt != v.end(); ++vIt) {
-			std::cerr << ' ' << *vIt;
-		}
-		std::cerr << '\n';
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "flagWithDash = " << flagWithDash << "	  val = " << val << '\n';
+			std::cerr << "parsedToDoubles v =";
+			for (std::vector<double>::const_iterator vIt = v.begin(); vIt != v.end(); ++vIt) {
+				std::cerr << ' ' << *vIt;
+			}
+			std::cerr << '\n';
+#		endif
 		switch (flag) {
 			case 'f' :
 				if (v.size() != this->nStates - 1) {
@@ -1347,7 +1414,7 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 				if (x < 0.0) {
 						throw NxsException("The sum of the state frequencies must be less than 1");
 				}
-				
+
 				v.push_back(x);
 				this->stateFreqVector = v;
 				break;
@@ -1373,7 +1440,7 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 			case 'm' :
 				this->rates = v;
 				this->nRates = this->rates.size();
-				
+
 				for (unsigned i = 0; i < this->nRates; ++i) {
 					if (v[i] < 0.0) {
 						throw NxsException("rate multipliers must be positive");
@@ -1399,7 +1466,7 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 				break;
 		}
 	}
-	
+
 	this->nRates = this->rates.size();
 	if (this->nRates != this->rateProb.size()) {
 		throw NxsException("The number of rates and the number of rate category probabilities must agree");
@@ -1407,27 +1474,27 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 
 	this->pVecLen = this->nRates*this->nStates;
 	this->categStateProb.resize(this->pVecLen) ;
-	
+
 	for (unsigned i = 0; i < this->nRates; ++i) {
 		const double rp = this->rateProb[i];
 		for (unsigned j = 0; j < this->nStates; ++j) {
 			this->categStateProb[i*this->nStates + j] = rp*this->stateFreqVector[j];
 		}
 	}
-	
+
 	this->writeModel(std::cerr);
-	
-	
+
+
 	this->firstMatVec.Free();
 	this->firstMatVec.Initialize(this->nRates, this->nStates, this->nStates);
 	this->secondMatVec.Free();
 	this->secondMatVec.Initialize(this->nRates, this->nStates, this->nStates);
 
-	
+
 
 	int numLeaves = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
     long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    const double * patternWeights=0L; 
+    const double * patternWeights=0L;
     int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
     int numPartialStructs = 1;  // we don't need any, but I'm afraid of using 0 as an arg to beagle
     int numInstRateModels = 1 ; // we need a single q-matrix
@@ -1440,12 +1507,12 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
     long resourceReq=64;
     int eigenIndex, numToCalc ;
     this->dsct_model_obj = 0L;
-    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves, 
+    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves,
     												    numPatterns,
     												    patternWeights,
     												    this->nStates,
     												    numStateCodeArrays,
-    												    numPartialStructs, 
+    												    numPartialStructs,
     												    numInstRateModels,
     												    asrvObjectArray,
     												    numProbMats,
@@ -1461,7 +1528,7 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 	const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(this->likeCalcHandle);
     if (LCI == 0L) {
         throw NxsException("Call to getLikeCalculatorInstance failed");
-    }    
+    }
 	this->dsct_model_obj = LCI->probModelArray[0];
 
 
@@ -1521,7 +1588,7 @@ void CommonInfo::writeModel(std::ostream & out) const {
 		out << "\nModel not fully symmetric (not an Mk model)";
 	}
 	out << "\n";
-	
+
 	out << "[PAUP] begin paup;    lset nst = 6 BaseFreq = (";
 	for (unsigned i = 0; i < this->nStates - 1; ++i) {
 		out << ' ' << this->stateFreqVector.at(i);
@@ -1575,7 +1642,7 @@ int main(int argc, char * argv[]) {
 					std::cerr << "Expecting a numerical argument after " << argstr << '\n';
 					return 1;
 				}
-					
+
 			}
 			else if (filename.empty()) {
 				filename = argstr;
@@ -1586,8 +1653,8 @@ int main(int argc, char * argv[]) {
 			}
 		}
 	}
-	
-	
+
+
 
 
 	if (filename.empty()) {
@@ -1602,7 +1669,7 @@ int main(int argc, char * argv[]) {
 							| PublicNexusReader::NEXUS_TREES_BLOCK_BIT
 							);
 		MultiFormatReader nexusReader(blocksToRead, NxsReader::WARNINGS_TO_STDERR);
-		
+
 		std::cerr << "Reading " << filename << "\n";
 		try {
 			nexusReader.ReadFilepath(filename.c_str(), MultiFormatReader::NEXUS_FORMAT);
@@ -1632,7 +1699,7 @@ int main(int argc, char * argv[]) {
 		}
 		NCL_COULD_BE_CONST	NxsCharactersBlock * charsBlock = nexusReader.GetCharactersBlock(taxaBlock, 0);
 		assert(charsBlock);
-		
+
 		const NxsTransformationManager &tm = charsBlock->GetNxsTransformationManagerRef();
 		std::vector<int> patternWeights = tm.GetDefaultIntWeights();
 		const int * pwPtr = (patternWeights.empty() ? 0L : &patternWeights[0]);
@@ -1642,12 +1709,12 @@ int main(int argc, char * argv[]) {
 		blob.initialize(symbols);
 
 		blob.readModel(optVec);
-	
-		
+
+
 		blob.zeroVec.assign(bitFieldMatrix[0].size(), 0);
 		gBlob = &blob;
 		std::cerr << "from line " << __LINE__ << ":\n" ; writeBitFieldMatrix(std::cerr, bitFieldMatrix);
-		
+
 		const unsigned nTreesBlocks = nexusReader.GetNumTreesBlocks(taxaBlock);
 		if (nTreesBlocks == 0) {
 			std::cerr << "Expecting a file with at least 1 TREES block.\n";
@@ -1675,7 +1742,7 @@ int main(int argc, char * argv[]) {
 					std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";
 				}
 			}
-		}		
+		}
 		nexusReader.DeleteBlocksFromFactories();
 	}
 	catch(const NxsException &x) {
