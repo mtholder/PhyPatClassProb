@@ -379,10 +379,10 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 				assert(rightProbs != 0L);
 
 				const BitField ancAllField = (1|2);
-				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass.at(downPass);
+				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
 				std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
 				if (ancVec == 0L) { // if we have not visited this set of probabilities, start with a vector of 0's
-					ancVec = &(forCurrScoreDownPass.at(ancAllField)); // get the memory
+					ancVec = &(forCurrScoreDownPass[ancAllField]); // get the memory
 					ancVec->assign(blob.nRates*blob.nStates, 0.0); // set it to 0.0
 				}
 				addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);

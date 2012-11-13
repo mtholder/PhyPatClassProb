@@ -930,9 +930,71 @@ void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 		}
 	}
 }
+class NodeDataStructure{ //data members
+    public:
+        NodeDataStructure() {
+            std::cerr << "NodeDataStructure ctor. Addrress = "<< long(this) << "\n";
+        }
+
+};
 
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
     cout << "blah\n";
+    std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
+    std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
+
+	try {
+		int ndInd = preorderVec.size() - 1;
+		for (; ndInd >= 0; --ndInd) {
+			const NxsSimpleNode * nd = preorderVec[ndInd];
+			std::vector<NxsSimpleNode *> children = nd->GetChildren();
+			const unsigned numChildren = children.size();
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#			endif
+			NodeID currNdId(nd, 0);
+			NodeDataStructure * currNdData = new NodeDataStructure();
+			node2dataMap[nd] = currNdData;
+			if (numChildren == 0) {
+				// initialization
+			}
+			else {
+				if (numChildren != 2)
+					throw NxsException("Trees must be of degree 2\n");
+
+            }
+		}
+	}
+	catch (...) {
+        throw;
+	}
+    //std::vector<const NxsSimplenode.....
+    //
+    //if(tipProbInfo = constant)
+    //else if(tipProbInfo changes) ....
+    //return false;
+    //
+    //bool needToDelRootProbInfo = true;    <--should this be true since it's ininformative?
+    //Do we not need 'tipProbInfo.createForTip(blob); (since we don't need to know the tip info?)
+    //
+    //
+    //if (blob.isSymmetric) {
+	//				currProbInfo->calculateSymmetric(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										tiMatFunc, blob);
+	//			}
+	//			else {
+	//				currProbInfo->calculate(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										tiMatFunc, blob);
+    //will the above stuff be the same?
+    //
+    //
+    //need to define Z, t,c,a (t observed states) (c common state - for c=-1 we will have no repeated states)
+    // for(c=-1)
+    //      {nStates = -1}
+    //
+    //
 }
 void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
