@@ -930,11 +930,44 @@ void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 		}
 	}
 }
+
+class ProbForObsStateSet{ //for each state want to set -1 to 1 and all else to 0 (will be either 1 or anything up to NumStates)
+  public:
+      ProbForObsStateSet(unsigned int numStates) {
+
+
+          std::vector<double> initialVal(numStates, 0.0);
+          noRepeatedState = initialVal;
+          probVec.assign(numStates, initialVal);
+      }
+      std::vector<double> & getProbForCommState(int commState) {
+          if(commState == -1)
+            return noRepeatedState;
+
+      return probVec.at(commState);
+      }
+  private:
+      typedef std::vector<double> probvec_t;
+      std::vector<probvec_t> probVec;
+      probvec_t noRepeatedState;
+   };
+
+
 class NodeDataStructure{ //data members
     public:
-        NodeDataStructure() {
-            std::cerr << "NodeDataStructure ctor. Addrress = "<< long(this) << "\n";
+        NodeDataStructure(unsigned int numStates) {
+
+            int len = 1 << numStates;
+            ProbForObsStateSet dummy (numStates);
+            probVec.assign(len, dummy);
+            std::cerr << "NodeDataStructure ctor. Address = "<< long(this) << "len = " << len <<"\n";
+
         }
+        ProbForObsStateSet & getForObsStateSet(int obs) {
+            return probVec.at(obs);
+        }
+
+        std::vector<ProbForObsStateSet> probVec;
 
 };
 
@@ -953,10 +986,17 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 				std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
 #			endif
 			NodeID currNdId(nd, 0);
-			NodeDataStructure * currNdData = new NodeDataStructure();
+			NodeDataStructure * currNdData = new NodeDataStructure(blob.nStates);
 			node2dataMap[nd] = currNdData;
 			if (numChildren == 0) {
-				// initialization
+				for(int i=0; i<blob.nStates; i++)
+				{
+				    int ss=1 << i;
+				    ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
+                    std::vector<double> & v = p.getProbForCommState(-1);
+                    v[i] = 1.0;
+
+                }
 			}
 			else {
 				if (numChildren != 2)
