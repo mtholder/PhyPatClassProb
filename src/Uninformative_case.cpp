@@ -291,8 +291,8 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 	ProbForParsScore & forZeroSteps = this->byParsScore[0];
 	unsigned stateIndex = 0;
 	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
-		 	scIt != blob.singleStateCodes.end();
-		 	++scIt, ++stateIndex) {
+			scIt != blob.singleStateCodes.end();
+			++scIt, ++stateIndex) {
 		const BitField sc = *scIt;
 		std::vector<double> & pVec = forZeroSteps.byDownPass[sc][sc];
 		pVec.assign(blob.nRates*blob.nStates, 0.0);
@@ -354,7 +354,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 	bool scObserved = true;
 	ProbForParsScore & forCurrScore = this->byParsScore[currScore];
 	// if the ancestor has state set of {0}, and currScore = 1 then
-	// 	one child must display a single state, and the other must have 2 states observed
+	//	one child must display a single state, and the other must have 2 states observed
 	BitField downPass = 1;
 	if (true) { // braces for reducing the scoping of variables, only
 		unsigned int leftAccum = 0;
@@ -391,12 +391,12 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		}
 	}
 	// if the ancestor has state set of {0,1}, and currScore = 1 then
-	// 	both children must display a single state.
+	//	both children must display a single state.
 	downPass = 3;
 	unsigned int leftAccum = 0;
 	BitField leftDown = 1; // set {0}  is 1 in our bitfield notation
 	unsigned int rightAccum = 0;
-	BitField rightDown = 1; // set {0}  is 1 in our bitfield notation
+	BitField rightDown = 1; // set {0}	is 1 in our bitfield notation
 	const ProbForParsScore & leftFPS = leftPI.getByParsScore(leftAccum);
 	const MaskToProbsByState * leftM2PBS = leftFPS.getMapPtrForDownPass(leftDown);
 	assert(leftM2PBS != 0L);
@@ -425,7 +425,7 @@ void ProbInfo::calculateSymmetric(const ProbInfo & leftPI, double leftEdgeLen,
 		stateCodeTranslationVec.push_back(i);
 	}
 	stateCodeTranslationVec[0] = 1;
-    stateCodeTranslationVec[1] = 0;
+	stateCodeTranslationVec[1] = 0;
 	addToAncProbVecSymmetric(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, stateCodeTranslationVec, blob);
 	addToAncProbVecSymmetric(*ancVec, rightPMatVec, rightProbs, leftPMatVec, leftProbs, stateCodeTranslationVec, blob);
 
@@ -724,7 +724,7 @@ bool ProbInfo::allCalcsForAllPairs(
 				// order (2^k)
 				for (BitFieldRow::const_iterator rasIt = rightSSRow.begin(); rasIt != rightSSRow.end(); ++rasIt) {
 					const BitField rightAllStates = *rasIt;
-//					std::cerr << "from line: " << __LINE__<< ":  rightAllStates="  << blob.toSymbol(rightAllStates) << '\n';
+//					std::cerr << "from line: " << __LINE__<< ":	 rightAllStates="  << blob.toSymbol(rightAllStates) << '\n';
 					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
 					if (rightProbs == 0L) {
 //						std::cerr << "from line: " << __LINE__<< ": right child empty bin. Skipping...\n";
@@ -739,7 +739,7 @@ bool ProbInfo::allCalcsForAllPairs(
 					}
 					probsAdded = true;
 //					std::cerr << __LINE__ << " adding:";
-//					std::cerr << " leftDown="  << blob.toSymbol(leftDown)  << " leftAccum="  << leftAccum  << " leftAllStates="  << blob.toSymbol(leftAllStates);
+//					std::cerr << " leftDown="  << blob.toSymbol(leftDown)  << " leftAccum="	 << leftAccum  << " leftAllStates="	 << blob.toSymbol(leftAllStates);
 //					std::cerr << " rightDown=" << blob.toSymbol(rightDown) << " rightAccum=" << rightAccum << " rightAllStates=" << blob.toSymbol(rightAllStates) << " \n";
 					addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
 				}
@@ -932,49 +932,47 @@ void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
 }
 
 class ProbForObsStateSet{ //for each state want to set -1 to 1 and all else to 0 (will be either 1 or anything up to NumStates)
-  public:
-      ProbForObsStateSet(unsigned int numStates) {
+	public:
+		ProbForObsStateSet(unsigned int numStates) {
+			std::vector<double> initialVal(numStates, 0.0);
+			noRepeatedState = initialVal;
+			probVec.assign(numStates, initialVal);
+		}
 
+		std::vector<double> & getProbForCommState(int commState) {
+			if(commState == -1)
+				return noRepeatedState;
+			return probVec.at(commState);
+		}
 
-          std::vector<double> initialVal(numStates, 0.0);
-          noRepeatedState = initialVal;
-          probVec.assign(numStates, initialVal);
-      }
-      std::vector<double> & getProbForCommState(int commState) {
-          if(commState == -1)
-            return noRepeatedState;
-
-      return probVec.at(commState);
-      }
-  private:
-      typedef std::vector<double> probvec_t;
-      std::vector<probvec_t> probVec;
-      probvec_t noRepeatedState;
-   };
+	private:
+		typedef std::vector<double> probvec_t;
+		std::vector<probvec_t> probVec;
+		probvec_t noRepeatedState;
+};
 
 
 class NodeDataStructure{ //data members
-    public:
-        NodeDataStructure(unsigned int numStates) {
+	public:
+		NodeDataStructure(unsigned int numStates) {
+			int len = 1 << numStates;
+			ProbForObsStateSet dummy (numStates);
+			probVec.assign(len, dummy);
+			std::cerr << "NodeDataStructure ctor. Address = "<< long(this) << "len = " << len <<"\n";
+		}
 
-            int len = 1 << numStates;
-            ProbForObsStateSet dummy (numStates);
-            probVec.assign(len, dummy);
-            std::cerr << "NodeDataStructure ctor. Address = "<< long(this) << "len = " << len <<"\n";
+		ProbForObsStateSet & getForObsStateSet(int obs) {
+			return probVec.at(obs);
+		}
 
-        }
-        ProbForObsStateSet & getForObsStateSet(int obs) {
-            return probVec.at(obs);
-        }
-
-        std::vector<ProbForObsStateSet> probVec;
+		std::vector<ProbForObsStateSet> probVec;
 
 };
 
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
-    cout << "blah\n";
-    std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
-    std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
+	cout << "blah\n";
+	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
+	std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
 
 	try {
 		int ndInd = preorderVec.size() - 1;
@@ -991,34 +989,34 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 			if (numChildren == 0) {
 				for(int i=0; i<blob.nStates; i++)
 				{
-				    int ss=1 << i;
-				    ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
-                    std::vector<double> & v = p.getProbForCommState(-1);
-                    v[i] = 1.0;
+					int ss=1 << i;
+					ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
+					std::vector<double> & v = p.getProbForCommState(-1);
+					v[i] = 1.0;
 
-                }
+				}
 			}
 			else {
 				if (numChildren != 2)
 					throw NxsException("Trees must be of degree 2\n");
 
-            }
+			}
 		}
 	}
 	catch (...) {
-        throw;
+		throw;
 	}
-    //std::vector<const NxsSimplenode.....
-    //
-    //if(tipProbInfo = constant)
-    //else if(tipProbInfo changes) ....
-    //return false;
-    //
-    //bool needToDelRootProbInfo = true;    <--should this be true since it's ininformative?
-    //Do we not need 'tipProbInfo.createForTip(blob); (since we don't need to know the tip info?)
-    //
-    //
-    //if (blob.isSymmetric) {
+	//std::vector<const NxsSimplenode.....
+	//
+	//if(tipProbInfo = constant)
+	//else if(tipProbInfo changes) ....
+	//return false;
+	//
+	//bool needToDelRootProbInfo = true;	<--should this be true since it's ininformative?
+	//Do we not need 'tipProbInfo.createForTip(blob); (since we don't need to know the tip info?)
+	//
+	//
+	//if (blob.isSymmetric) {
 	//				currProbInfo->calculateSymmetric(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
 	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
 	//										tiMatFunc, blob);
@@ -1027,14 +1025,14 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 	//				currProbInfo->calculate(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
 	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
 	//										tiMatFunc, blob);
-    //will the above stuff be the same?
-    //
-    //
-    //need to define Z, t,c,a (t observed states) (c common state - for c=-1 we will have no repeated states)
-    // for(c=-1)
-    //      {nStates = -1}
-    //
-    //
+	//will the above stuff be the same?
+	//
+	//
+	//need to define Z, t,c,a (t observed states) (c common state - for c=-1 we will have no repeated states)
+	// for(c=-1)
+	//		{nStates = -1}
+	//
+	//
 }
 void calculatePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
@@ -1234,8 +1232,8 @@ void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) 
 	const std::vector<double> & constFPS = this->probsByStepsThenObsStates[0];
 	double totalProb = 0.0;
 	for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
-		 	scIt != blob.singleStateCodes.end();
-		 	++scIt) {
+			scIt != blob.singleStateCodes.end();
+			++scIt) {
 		 out << "Expected steps = 0 states = " << blob.toSymbol(*scIt) << " prob = " << constFPS[*scIt] << '\n';
 		 totalProb += constFPS[*scIt];
 	}
@@ -1253,7 +1251,7 @@ void ExpectedPatternSummary::write(std::ostream & out, const CommonInfo & blob) 
 				assert(p == 0.0);
 			}
 			if (obsStates == blob.lastBitField)
-			 	break;
+				break;
 		 }
 	}
 	out << "totalprob = " << totalProb << '\n';
@@ -1435,17 +1433,17 @@ void CommonInfo::calcEigenSolution() {
 
 	setQMatForHandle(this->likeCalcHandle, 0, const_cast<const double **>(qMatAlias));
 
-    int rc = calc_eigen_mat(dsct_model_obj, 0);
-    if (rc == 0) {
-    	errormsg << "recalc_eigen_mat failed";
-        throw NxsException(errormsg);
-    }
+	int rc = calc_eigen_mat(dsct_model_obj, 0);
+	if (rc == 0) {
+		errormsg << "recalc_eigen_mat failed";
+		throw NxsException(errormsg);
+	}
 }
 
 std::vector<double> toVecDouble(const std::string &s, const char * optName) {
 	try {
 		size_t begInd = 0;
-		std::vector<double>	v;
+		std::vector<double> v;
 		for (;;) {
 			size_t endInd = s.find(',', begInd);
 			if (endInd == std::string::npos) {
@@ -1597,42 +1595,42 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 
 
 	int numLeaves = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    const double * patternWeights=0L;
-    int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    int numPartialStructs = 1;  // we don't need any, but I'm afraid of using 0 as an arg to beagle
-    int numInstRateModels = 1 ; // we need a single q-matrix
-    const ASRVObj ** asrvObjectArray=0L;  // we won't use pytbeaglehon's asrv
-    int numProbMats= 2*(this->nRates); // we need a left and right for each rate category
-    int numEigenStorage=1;
-    int numRescalingsMultipliers=0;
-    int resourceIndex=-1;
-    long resourcePref=64;
-    long resourceReq=64;
-    int eigenIndex, numToCalc ;
-    this->dsct_model_obj = 0L;
-    this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves,
-    												    numPatterns,
-    												    patternWeights,
-    												    this->nStates,
-    												    numStateCodeArrays,
-    												    numPartialStructs,
-    												    numInstRateModels,
-    												    asrvObjectArray,
-    												    numProbMats,
-    												    numEigenStorage,
-    												    numRescalingsMultipliers,
-    												    resourceIndex,
-    												    resourcePref,
-    												    resourceReq);
+	long numPatterns = 1 ; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+	const double * patternWeights=0L;
+	int numStateCodeArrays = 2; // we don't need any, but I'm afraid of using 0 as an arg to beagle
+	int numPartialStructs = 1;	// we don't need any, but I'm afraid of using 0 as an arg to beagle
+	int numInstRateModels = 1 ; // we need a single q-matrix
+	const ASRVObj ** asrvObjectArray=0L;  // we won't use pytbeaglehon's asrv
+	int numProbMats= 2*(this->nRates); // we need a left and right for each rate category
+	int numEigenStorage=1;
+	int numRescalingsMultipliers=0;
+	int resourceIndex=-1;
+	long resourcePref=64;
+	long resourceReq=64;
+	int eigenIndex, numToCalc ;
+	this->dsct_model_obj = 0L;
+	this->likeCalcHandle = createLikelihoodCalcInstance(numLeaves,
+														numPatterns,
+														patternWeights,
+														this->nStates,
+														numStateCodeArrays,
+														numPartialStructs,
+														numInstRateModels,
+														asrvObjectArray,
+														numProbMats,
+														numEigenStorage,
+														numRescalingsMultipliers,
+														resourceIndex,
+														resourcePref,
+														resourceReq);
 
 	if (this->likeCalcHandle < 0) {
 		throw NxsException("Could not initialize a LikelihoodCalcInstance!");
 	}
 	const struct LikeCalculatorInstance * LCI = getLikeCalculatorInstance(this->likeCalcHandle);
-    if (LCI == 0L) {
-        throw NxsException("Call to getLikeCalculatorInstance failed");
-    }
+	if (LCI == 0L) {
+		throw NxsException("Call to getLikeCalculatorInstance failed");
+	}
 	this->dsct_model_obj = LCI->probModelArray[0];
 
 
@@ -1693,7 +1691,7 @@ void CommonInfo::writeModel(std::ostream & out) const {
 	}
 	out << "\n";
 
-	out << "[PAUP] begin paup;    lset nst = 6 BaseFreq = (";
+	out << "[PAUP] begin paup;	  lset nst = 6 BaseFreq = (";
 	for (unsigned i = 0; i < this->nStates - 1; ++i) {
 		out << ' ' << this->stateFreqVector.at(i);
 	}
@@ -1703,18 +1701,18 @@ void CommonInfo::writeModel(std::ostream & out) const {
 			out << ' ' << this->relRateMat.GetAlias()[a][d];
 		}
 	}
-	out << ");  end;\n";
+	out << ");	end;\n";
 }
 
 
 void printHelp(std::ostream & o) {
 	o << "Takes the path to a NEXUS file with a single characters block as an argument\n";
 	o << "\nOptions:\n";
-	o << "   -f#,#,#        state frequencies (last is calculated by subtraction).\n";
-	o << "   -r#,#,#,#,#    relative rates (the last is defined to be 1.0).\n";
-	o << "   -m#,#,#,...    rate multipliers (one for each rate category).\n";
-	o << "   -p#,#,#,...    rate category probabilities (one fewer than the number of rates - the last is calculated by subtraction).\n";
-	o << "   -s             use algorithms specifically designed for the Mk-type models\n";
+	o << "	 -f#,#,#		state frequencies (last is calculated by subtraction).\n";
+	o << "	 -r#,#,#,#,#	relative rates (the last is defined to be 1.0).\n";
+	o << "	 -m#,#,#,...	rate multipliers (one for each rate category).\n";
+	o << "	 -p#,#,#,...	rate category probabilities (one fewer than the number of rates - the last is calculated by subtraction).\n";
+	o << "	 -s				use algorithms specifically designed for the Mk-type models\n";
 }
 
 
@@ -1831,7 +1829,7 @@ int main(int argc, char * argv[]) {
 			NCL_COULD_BE_CONST	NxsTreesBlock * treesBlock = nexusReader.GetTreesBlock(taxaBlock, treesBlockInd);
 			assert(treesBlock);
 			treesBlock->ProcessAllTrees();
-            const unsigned nTreesThisBlock = treesBlock->GetNumTrees();
+			const unsigned nTreesThisBlock = treesBlock->GetNumTrees();
 			for (unsigned treeInd = 0; treeInd < nTreesThisBlock; ++treeInd) {
 				const NxsFullTreeDescription & ftd = treesBlock->GetFullTreeDescription(treeInd);
 				if (ftd.AllEdgesHaveLengths()) {
