@@ -984,7 +984,7 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 				std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
 #			endif
 			NodeID currNdId(nd, 0);
-			NodeDataStructure * currNdData = new NodeDataStructure(blob.nStates);
+			NodeDataStructure * currNdData = new NodeDataStructure(blob.nStates); //curNdData = ancestor (in lower loop)
 			node2dataMap[nd] = currNdData;
 			if (numChildren == 0) {
 				for(int i=0; i<blob.nStates; i++)
@@ -999,6 +999,11 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 			else {
 				if (numChildren != 2)
 					throw NxsException("Trees must be of degree 2\n");
+                NxsSimpleNode * leftChild = children[0];
+                NodeDataStructure * leftNodeData = node2dataMap[leftChild];
+
+                NxsSimpleNode * rightChild = children[1];
+                NodeDataStructure * rightNodeData = node2dataMap[rightChild];
 
 			}
 		}
