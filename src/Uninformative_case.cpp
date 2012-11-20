@@ -955,6 +955,7 @@ class ProbForObsStateSet{ //for each state want to set -1 to 1 and all else to 0
 class NodeDataStructure{ //data members
 	public:
 		NodeDataStructure(unsigned int numStates) {
+		    numLeaves = 0;
 			int len = 1 << numStates;
 			ProbForObsStateSet dummy (numStates);
 			probVec.assign(len, dummy);
@@ -965,8 +966,16 @@ class NodeDataStructure{ //data members
 			return probVec.at(obs);
 		}
 
-		std::vector<ProbForObsStateSet> probVec;
+		int getNumLeaves() {
+            return numLeaves;
+            }
 
+        void setNumLeaves(int n) {
+            numLeaves = n;
+        }
+    private:
+		std::vector<ProbForObsStateSet> probVec;
+        int numLeaves;
 };
 
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
@@ -993,17 +1002,18 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 					ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
 					std::vector<double> & v = p.getProbForCommState(-1);
 					v[i] = 1.0;
-
+                    currNdData->setNumLeaves(1);
 				}
 			}
 			else {
 				if (numChildren != 2)
 					throw NxsException("Trees must be of degree 2\n");
-                NxsSimpleNode * leftChild = children[0];
+               NxsSimpleNode * leftChild = children[0];
                 NodeDataStructure * leftNodeData = node2dataMap[leftChild];
 
                 NxsSimpleNode * rightChild = children[1];
                 NodeDataStructure * rightNodeData = node2dataMap[rightChild];
+                currNdData->setNumLeaves(leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves());
 
 			}
 		}
