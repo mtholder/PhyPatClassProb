@@ -19,10 +19,12 @@ using namespace std;
 
 void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo);
 
+int getNextCommStSet(const int obsStSet, int i);
 
 // Globals (all should start with g[A-Z] pattern to make it easier to find and replace them later).
 const unsigned MAX_NUM_STATES = 8*sizeof(BitField);
 
+typedef std::vector<int> stateSetContainer;
 
 struct CommonInfo {
 		bool isSymmetric;
@@ -59,6 +61,16 @@ struct CommonInfo {
 
 		void readModel(const std::vector<std::string> & optVec);
 
+        stateSetContainer::const_iterator stateSetBegin() const  {
+            return possObsStateSet.begin();
+        }
+
+        stateSetContainer::const_iterator stateSetEnd() const  {
+            return possObsStateSet.end();
+        }
+
+
+
 		DSCTModelObj * dsct_model_obj;
 
 		std::vector<double> scaledEdgeLengths;
@@ -68,6 +80,7 @@ struct CommonInfo {
 
 		void writeModel(std::ostream & out) const;
 	private:
+        stateSetContainer possObsStateSet;
 		void calcEigenSolution();
 
 		std::vector<unsigned> stateCodeToNumStates;
@@ -79,6 +92,27 @@ struct CommonInfo {
 
 CommonInfo * gBlob = 0L;
 
+//this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
+int getNextCommStSet(const int obsStSet, int i) {
+    int ind;
+    int binRep;
+    if(i=-1) {
+        ind = 0; //index of state in normal counting sequence
+        binRep = 1; // 2^i
+    }
+    else {
+        ind = i+1;
+        binRep = 1<<ind;
+        if(binRep>obsStSet)
+            return -2; //protects against infinite loop
+    }
+    while((binRep & obsStSet) == 0)  {
+        binRep <<= 1;
+        ind++;
+    }
+    return ind;
+
+}
 
 
 std::set<BitField> toElements(BitField sc) {
@@ -115,6 +149,10 @@ void CommonInfo::initialize(const std::string & symbols) {
 	this->nStates = this->alphabet.length();
 	this->nRates = 1; //@TEMP no rate het
 	this->pVecLen = this->nRates*this->nStates;
+	int endIndex = 1<<(nStates); //end = stopping value
+	for(int i=1; i<endIndex; i++) {
+        possObsStateSet.push_back(i);
+	}
 
 	this->rates.assign(this->nRates, 1.0); //@TEMP no rate het
 	this->rateProb.assign(this->nRates, 1.0/this->nRates); // @TEMP equally-sized rate categories
@@ -1008,12 +1046,26 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 			else {
 				if (numChildren != 2)
 					throw NxsException("Trees must be of degree 2\n");
-               NxsSimpleNode * leftChild = children[0];
+                NxsSimpleNode * leftChild = children[0];
                 NodeDataStructure * leftNodeData = node2dataMap[leftChild];
 
                 NxsSimpleNode * rightChild = children[1];
                 NodeDataStructure * rightNodeData = node2dataMap[rightChild];
                 currNdData->setNumLeaves(leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves());
+
+                stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
+                for(; ssCit!=blob.stateSetEnd(); ++ssCit){
+                    const int & obsStSet = *ssCit; //'dereferencing' it
+                    int common = -1;
+                    while(common>-2) /* or for(;;)*/ {
+
+                            for(int a = 0; a<blob.nStates; a++) {
+
+                            }
+                            common = getNextCommStSet(obsStSet, common);
+
+                        }
+                }
 
 			}
 		}
