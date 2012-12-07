@@ -92,6 +92,10 @@ struct CommonInfo {
 
 CommonInfo * gBlob = 0L;
 
+int countBits(int);
+
+vector<int> subsetsOfGivenSize(int, int);
+
 //this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
 int getNextCommStSet(const int obsStSet, int i) {
     int ind;
@@ -1057,11 +1061,35 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                 for(; ssCit!=blob.stateSetEnd(); ++ssCit){
                     const int & obsStSet = *ssCit; //'dereferencing' it
                     int common = -1;
+                    int numObsSt = countBits(obsStSet); //will write this later
                     while(common>-2) /* or for(;;)*/ {
 
-                            for(int a = 0; a<blob.nStates; a++) {
+                        if(common == -1) { //no comm state
+                            if(currNdData->getNumLeaves()==numObsSt) {
+                               for(int a = 0; a<blob.nStates; a++) {
+                                    //vector<int> subsetsOfGivenSize(int, int);
+                                    vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
+                                    for(int j=0; j<leftObsStSets.size(); j++) {
+                                        int leftObsStSet = leftObsStSets[j];
+                                        int rightObsStSet = obsStSet - leftObsStSet;
+                                        for(int a=0; a<blob.nStates; a++) {
+                                            //info we need to know
+                                            double leftProb, rightProb;
 
+                                        }
+                                    }
+                                }
                             }
+                        }
+                        else {
+                            for(int a = 0; a<blob.nStates; a++)
+                                {
+
+                                }
+
+                        }
+
+
                             common = getNextCommStSet(obsStSet, common);
 
                         }
