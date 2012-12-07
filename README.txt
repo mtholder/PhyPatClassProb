@@ -17,7 +17,7 @@ Building
 ========
 Building the software requires NCL, beagle, and pytbeaglehon. The easiest way
 to build the software (on Mac or *nix) is to download the snapshot at
-[http://phylo.bio.ku.edu/software/pattern_class_prob_and_deps.tar.gz](http://phylo.bio.ku.edu/software/pattern_class_prob_and_deps.tar.gz)
+http://phylo.bio.ku.edu/software/pattern_class_prob_and_deps.tar.gz
 which contains the dependencies and a do_build.sh script.
 
 If you want to obtain the dependencies via version control, you can get NCL v2.1
