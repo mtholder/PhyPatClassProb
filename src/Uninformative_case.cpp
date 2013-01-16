@@ -94,7 +94,35 @@ CommonInfo * gBlob = 0L;
 
 int countBits(int);
 
-vector<int> subsetsOfGivenSize(int, int);
+int countBits(int x)
+{
+    int num=0;
+    while(x>0)
+    {
+        if(x& 1)
+            ++num;
+        x=(x>>1);
+    }
+    return num;
+}
+
+vector<int> subsetsOfGivenSize(int obsStSet, int numBits);
+
+vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
+{
+    set<int> subsets;
+    int i = 1;
+    while(i<=obsStSet)
+    {
+        int j = i& obsStSet;
+        if(countBits(j==numBits))
+            subsets.insert(j); //takes in subsets, disregards repeated values
+        i++;
+    }
+    return vector<int> (subsets.begin(), subsets.end()); //creates iterators
+}
+
+
 
 //this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
 int getNextCommStSet(const int obsStSet, int i) {
@@ -1061,7 +1089,7 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                 for(; ssCit!=blob.stateSetEnd(); ++ssCit){
                     const int & obsStSet = *ssCit; //'dereferencing' it
                     int common = -1;
-                    int numObsSt = countBits(obsStSet); //will write this later
+                    int numObsSt = countBits(obsStSet);
                     while(common>-2) /* or for(;;)*/ {
 
                         if(common == -1) { //no comm state
@@ -1074,7 +1102,7 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         int rightObsStSet = obsStSet - leftObsStSet;
                                         for(int a=0; a<blob.nStates; a++) {
                                             //info we need to know
-                                            double leftProb, rightProb;
+                                            double leftProb, rightProb; //loops to do the sums
 
                                         }
                                     }
@@ -1083,7 +1111,7 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                         }
                         else {
                             for(int a = 0; a<blob.nStates; a++)
-                                {
+                                { //3 common cases will be structured here
 
                                 }
 
