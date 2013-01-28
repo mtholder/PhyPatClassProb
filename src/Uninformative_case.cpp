@@ -114,6 +114,7 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
     int i = 1;
     while(i<=obsStSet)
     {
+        std::cerr << " subsetsOfGivenSize " << obsStSet << " " << numBits << " " << i << "\n";
         int j = i& obsStSet;
         if(countBits(j==numBits))
             subsets.insert(j); //takes in subsets, disregards repeated values
@@ -1029,7 +1030,7 @@ class NodeDataStructure{ //data members
 			int len = 1 << numStates;
 			ProbForObsStateSet dummy (numStates);
 			probVec.assign(len, dummy);
-			std::cerr << "NodeDataStructure ctor. Address = "<< long(this) << "len = " << len <<"\n";
+			std::cerr << "NodeDataStructure ctor. Address = "<< long(this) << " len = " << len <<"\n";
 		}
 
 		ProbForObsStateSet & getForObsStateSet(int obs) {
@@ -1094,15 +1095,18 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 
                         if(common == -1) { //no comm state
                             if(currNdData->getNumLeaves()==numObsSt) {
-                               for(int a = 0; a<blob.nStates; a++) {
+                               for(int a = 0; a < blob.nStates; a++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
                                     vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
-                                    for(int j=0; j<leftObsStSets.size(); j++) {
+                                    for(int j = 0; j < leftObsStSets.size(); j++) {
                                         int leftObsStSet = leftObsStSets[j];
                                         int rightObsStSet = obsStSet - leftObsStSet;
-                                        for(int a=0; a<blob.nStates; a++) {
+                                        for(int a = 0; a < blob.nStates; a++) {
                                             //info we need to know
                                             double leftProb, rightProb; //loops to do the sums
+                                            //for(int x = 1; x < blob.nStates; x++) {
+                                            //vector<double> leftProb =
+                                            //}
 
                                         }
                                     }
@@ -1110,8 +1114,19 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                             }
                         }
                         else {
-                            for(int a = 0; a<blob.nStates; a++)
-                                { //3 common cases will be structured here
+                            for(int a = 0; a < blob.nStates; a++) { //3 common cases will be structured here
+                                //if(common = -1) {
+                                //
+                                //}
+                                //int leftCommon = i;
+                                //int rightCommon = i;
+                                //else if(common > i) {
+                                //
+                                //}
+                                //else if(common < i) {
+                                //
+                                //}
+                                //else return 0;
 
                                 }
 
