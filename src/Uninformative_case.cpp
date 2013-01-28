@@ -129,7 +129,7 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
 int getNextCommStSet(const int obsStSet, int i) {
     int ind;
     int binRep;
-    if(i=-1) {
+    if(i==-1) {
         ind = 0; //index of state in normal counting sequence
         binRep = 1; // 2^i
     }
@@ -1095,13 +1095,13 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 
                         if(common == -1) { //no comm state
                             if(currNdData->getNumLeaves()==numObsSt) {
-                               for(int a = 0; a < blob.nStates; a++) {
+                               for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
                                     vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
                                     for(int j = 0; j < leftObsStSets.size(); j++) {
                                         int leftObsStSet = leftObsStSets[j];
                                         int rightObsStSet = obsStSet - leftObsStSet;
-                                        for(int a = 0; a < blob.nStates; a++) {
+                                        for(int des = 0; des < blob.nStates; des++) {
                                             //info we need to know
                                             double leftProb, rightProb; //loops to do the sums
                                             //for(int x = 1; x < blob.nStates; x++) {
