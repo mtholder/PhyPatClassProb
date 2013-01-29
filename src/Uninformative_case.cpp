@@ -116,7 +116,7 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
     {
         std::cerr << " subsetsOfGivenSize " << obsStSet << " " << numBits << " " << i << "\n";
         int j = i& obsStSet;
-        if(countBits(j==numBits))
+        if(countBits(j) == numBits)
             subsets.insert(j); //takes in subsets, disregards repeated values
         i++;
     }
@@ -1097,16 +1097,20 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                             if(currNdData->getNumLeaves()==numObsSt) {
                                for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
+                                    std::cerr << "ObsStSet " << obsStSet << '\n';
                                     vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
                                     for(int j = 0; j < leftObsStSets.size(); j++) {
                                         int leftObsStSet = leftObsStSets[j];
                                         int rightObsStSet = obsStSet - leftObsStSet;
-                                        for(int des = 0; des < blob.nStates; des++) {
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        double leftProb, rightProb;
+                                        if(leftNodeData->getNumLeaves() == 1) {
+                                        leftProb = calcProbForTransition(NodeDataStructure * leftNodeData, anc, leftObsStSet, leftChild->GetEdgeToParent, blob)
+                                        }
+                                        else
+                                            for(int des = 0; des < blob.nStates; des++) {
                                             //info we need to know
-                                            double leftProb, rightProb; //loops to do the sums
-                                            //for(int x = 1; x < blob.nStates; x++) {
-                                            //vector<double> leftProb =
-                                            //}
 
                                         }
                                     }
