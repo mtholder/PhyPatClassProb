@@ -1110,7 +1110,12 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         }
                                         else
                                             for(int des = 0; des < blob.nStates; des++) {
-                                            //info we need to know
+                                                std::cerr << "leftProb " << leftProb << '\n';
+                                                int leftObsStSet = leftObsStSets[des];
+                                                if(rightNodeData->getNumLeaves() == 1) {
+                                                rightProb = calcProbForTranstion(NodeDataStructure * rightNodeData, anc, rightObsStSet, rightChild->GetEdgeToParent, blob)
+                                                }
+                                                std::cerr << "rightProb " << rightProb << '\n'; //}?
 
                                         }
                                     }
