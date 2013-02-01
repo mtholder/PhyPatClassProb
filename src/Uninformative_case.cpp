@@ -1049,6 +1049,15 @@ class NodeDataStructure{ //data members
         int numLeaves;
 };
 
+
+double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData, 
+	                         int ancIndex, 
+	                         int obsBits, 
+	                         double edgeLen, 
+	                         const CommonInfo & blob){
+	return 0.0;
+}
+
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
 	cout << "blah\n";
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
@@ -1106,14 +1115,13 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         std::cerr << "rightObsStSet " << rightObsStSet << '\n';
                                         double leftProb, rightProb;
                                         if(leftNodeData->getNumLeaves() == 1) {
-                                        leftProb = calcProbForTransition(NodeDataStructure * leftNodeData, anc, leftObsStSet, leftChild->GetEdgeToParent, blob)
+                                        	leftProb = calcProbOfSubtreeForObsStSetNoRepeated(leftNodeData, anc, leftObsStSet, leftChild->GetEdgeToParent().GetDblEdgeLen(), blob);
                                         }
                                         else
                                             for(int des = 0; des < blob.nStates; des++) {
                                                 std::cerr << "leftProb " << leftProb << '\n';
-                                                int rightObsStSet = rightObsStSets[des];
                                                 if(rightNodeData->getNumLeaves() == 1) {
-                                                rightProb = calcProbForTranstion(NodeDataStructure * rightNodeData, anc, rightObsStSet, rightChild->GetEdgeToParent, blob)
+                                                	rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightChild->GetEdgeToParent().GetDblEdgeLen(), blob);
                                                 }
                                                 std::cerr << "rightProb " << rightProb << '\n'; //}?
 
