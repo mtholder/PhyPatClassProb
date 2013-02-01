@@ -1049,13 +1049,24 @@ class NodeDataStructure{ //data members
         int numLeaves;
 };
 
-
-double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData, 
-	                         int ancIndex, 
-	                         int obsBits, 
-	                         double edgeLen, 
+double calculateTransProb(int ancIndex, int i, double edgeLen, const CommonInfo & blob) {
+    return 1;
+}
+double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
+	                         int ancIndex,
+	                         int obsBits,
+	                         double edgeLen,
 	                         const CommonInfo & blob){
-	return 0.0;
+    double p = 0.0;
+    ProbForObsStateSet & childProbSet = subtreeData->getForObsStateSet(obsBits);
+    std::vector<double> & childProb = childProbSet.getProbForCommState(-1);
+    for(int i = 0; i<blob.nStates; i++) {
+        double transProb = calculateTransProb(ancIndex, i, edgeLen, blob); //includes lib so Mark will write this func
+        double partialLike = childProb[i];
+        double x = transProb * partialLike;
+        p += x; // this loop is how we sum
+    }
+	return p;
 }
 
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, std::ostream & out, TiMatFunc tiMatFunc, const CommonInfo & blob) {
