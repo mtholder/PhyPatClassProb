@@ -453,11 +453,11 @@ class NodeDataStructure{ //data members
         int numLeaves;
 };
 
-double calculateTransProb(int ancIndex, 
+double calculateTransProb(int ancIndex,
 						  int i,
 						  double edgeLen,
 						  const CommonInfo & blob) {
-	TiMatFunc fn = blob.tiMatFunc; 
+	TiMatFunc fn = blob.tiMatFunc;
 	fn(edgeLen, blob.firstMatVec.GetAlias());
 	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
 	//@TEMP no rate heterogeneity
@@ -483,7 +483,7 @@ double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
 
 
 
-void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree, 
+void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 													 std::ostream & out,
 													 const CommonInfo & blob) {
 	cout << "blah\n";
@@ -541,12 +541,25 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         std::cerr << "leftObsStSet " << leftObsStSet << '\n';
                                         std::cerr << "rightObsStSet " << rightObsStSet << '\n';
                                         double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
                                         if(leftNodeData->getNumLeaves() == 1) {
-                                        	leftProb = calcProbOfSubtreeForObsStSetNoRepeated(leftNodeData, anc, leftObsStSet, leftChild->GetEdgeToParent().GetDblEdgeLen(), blob);
+                                            leftProb = calculateTransProb(anc, convertBitToIndex(leftObsStSet), leftEdgeLen, blob);
                                         }
-                                        else
+                                        else {
+                                        	leftProb = calcProbOfSubtreeForObsStSetNoRepeated(leftNodeData, anc, leftObsStSet, leftEdgeLen, blob);
+                                        }
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+
+                                        if(rightNodeData->getNumLeaves() == 1) {
+                                            rightProb = calculateTransProb(anc, convertBitToIndex(rightObsStSet), rightEdgeLen, blob);
+                                        }
+                                        else { rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
+                                        }
+
+
                                             for(int des = 0; des < blob.nStates; des++) {
                                                 std::cerr << "leftProb " << leftProb << '\n';
+
                                                 if(rightNodeData->getNumLeaves() == 1) {
                                                 	rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightChild->GetEdgeToParent().GetDblEdgeLen(), blob);
                                                 }
@@ -1130,7 +1143,7 @@ int main(int argc, char * argv[]) {
 				if (ftd.AllEdgesHaveLengths()) {
 					NxsSimpleTree nclTree(ftd, 0, 0.0);
 					blob.tiMatFunc = GenericMulitCatTiMat;
-					calculateUninformativePatternClassProbabilities(nclTree, 
+					calculateUninformativePatternClassProbabilities(nclTree,
 																	std::cout,
 																	blob); //@TEMP JC
 
