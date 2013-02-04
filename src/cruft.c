@@ -567,3 +567,336 @@ void classifyObservedDataIntoClasses(
 		summary->write(std::cout, blob);
 	}
 }
+
+void ProbInfo::calculate(const ProbInfo & leftPI, double leftEdgeLen,
+					   const ProbInfo & rightPI, double rightEdgeLen,
+					   TiMatFunc fn,
+					   const CommonInfo & blob) {
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "calculate \n" ;
+#	endif
+	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
+	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
+	fn(rightEdgeLen, blob.secondMatVec.GetAlias());
+	const double *** rightPMatVec = const_cast<const double ***>(blob.secondMatVec.GetAlias());
+
+	const unsigned int leftMaxP = leftPI.getMaxParsScore();
+	const unsigned rightMaxP = rightPI.getMaxParsScore();
+	const unsigned maxParsScore = 1 + leftMaxP + rightMaxP;
+	this->byParsScore.clear();
+	this->byParsScore.resize(maxParsScore + 1); // add one to account zero
+	this->nLeavesBelow = leftPI.getNLeavesBelow() + rightPI.getNLeavesBelow();
+	unsigned obsMaxParsScore = 0;
+	// do the calculations for staying in the constant patterns, these are more simple than the general calcs...
+	if (true) { //@TEMP if true so that variables are scoped.
+		const ProbForParsScore & leftFPS = leftPI.getByParsScore(0);
+		const ProbForParsScore & rightFPS = rightPI.getByParsScore(0);
+		ProbForParsScore & forZeroSteps = this->byParsScore[0];
+
+
+		unsigned stateIndex = 0;
+		for (std::vector<BitField>::const_iterator scIt = blob.singleStateCodes.begin();
+				scIt != blob.singleStateCodes.end();
+				++scIt, ++stateIndex) {
+			const BitField sc = *scIt;
+			const std::vector<double> * leftProbs = leftFPS.getProbsForDownPassAndObsMask(sc, sc);
+			assert(leftProbs != 0L);
+			const std::vector<double> * rightProbs = rightFPS.getProbsForDownPassAndObsMask(sc, sc);
+			assert(rightProbs != 0L);
+
+			std::vector<double> & toFillVec = forZeroSteps.byDownPass[sc][sc];
+			toFillVec.assign(blob.nRates*blob.nStates, 0.0);
+
+			addToAncProbVec(toFillVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+		}
+	}
+
+	// order N
+	for (unsigned currScore = 1; currScore <= maxParsScore; ++currScore) {
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< ": currScore = " << currScore << ".\n";
+#		endif
+		bool scObserved = false;
+		ProbForParsScore & forCurrScore = this->byParsScore[currScore];
+		for (BitField downPass = 1; ; ++downPass) {
+			const unsigned numStatesInMask = blob.getNumStates(downPass);
+			if (numStatesInMask - 1 <= currScore) { // we cannot demand 3 states seen, but only 1 parsimony change... (all the probs will be zero, so we can skip them)
+
+				MaskToProbsByState & forCurrScoreDownPass = forCurrScore.byDownPass[downPass];
+
+				if (blob.getNumStates(downPass) > 1) {
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << (int)downPass << " " << blob.toSymbol(downPass) << " UNIONS:\n";
+#					endif
+					const VecMaskPair & forUnions = blob.pairsForUnionForEachDownPass[downPass];
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
+											  forUnions,
+											  leftPI,
+											  leftPMatVec,
+											  rightPI,
+											  rightPMatVec,
+											  currScore - 1,
+											  false,
+											  blob) || scObserved;
+				}
+				if (leftMaxP + rightMaxP >= currScore) {
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": downPass = " << blob.toSymbol(downPass) << " INTERSECTIONS:\n";
+#					endif
+					const VecMaskPair & forIntersections = blob.pairsForIntersectionForEachDownPass[downPass];
+					scObserved = this->allCalcsForAllPairs(forCurrScoreDownPass,
+											  forIntersections,
+											  leftPI,
+											  leftPMatVec,
+											  rightPI,
+											  rightPMatVec,
+											  currScore,
+											  true,
+											  blob) || scObserved;
+				}
+			}
+			if (downPass == blob.lastBitField)
+				break;
+			assert(downPass < blob.lastBitField);
+		}
+		if (scObserved)
+			obsMaxParsScore = currScore;
+	}
+	if (obsMaxParsScore < maxParsScore) {
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< '\n'; std::cerr << "maxParsScore  = " << maxParsScore << " obsMaxParsScore = " << obsMaxParsScore << "\n";
+#		endif
+		this->byParsScore.resize(obsMaxParsScore + 1);
+	}
+}
+
+
+// \returns true if there were probabalities that were summed
+bool ProbInfo::allCalcsForAllPairs(
+			MaskToProbsByState & forCurrScoreDownPass,
+			const VecMaskPair & pairVec,
+			const ProbInfo & leftPI,
+			const double *** leftPMatVec,
+			const ProbInfo & rightPI,
+			const double *** rightPMatVec,
+			const unsigned accumScore,
+			const bool doingIntersection,
+			const CommonInfo & blob)
+{	// order (2^k)^2
+	const unsigned leftMaxP = leftPI.getMaxParsScore();
+	const unsigned rightMaxP = rightPI.getMaxParsScore();
+	bool probsAdded = false;
+	for (VecMaskPair::const_iterator fuIt = pairVec.begin(); fuIt != pairVec.end(); ++fuIt) {
+		const BitField leftDown = fuIt->first;
+		const BitField rightDown = fuIt->second;
+#		if defined DEBUGGING_OUTPUT
+			std::cerr << "from line: " << __LINE__<< ": "; std::cerr << "leftDown = " << blob.toSymbol(leftDown) << " rightDown = " << blob.toSymbol(rightDown) << '\n';
+#		endif
+		assert(leftDown > 0);
+		assert(rightDown > 0);
+		if (doingIntersection) {
+			assert((leftDown & rightDown) != 0);
+		}
+		else {
+			assert((leftDown & rightDown) == 0);
+		}
+		const unsigned leftMinAccum = blob.getNumStates(leftDown) - 1;
+		const unsigned rightMinAccum = blob.getNumStates(rightDown) - 1;
+		if (leftMinAccum + rightMinAccum > accumScore) {
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "from line: " << __LINE__<< ": minScore exceed required score\n";
+#			endif
+			continue;
+		}
+		const unsigned acMaxLeftAccum = std::min(accumScore - rightMinAccum, leftMaxP);
+		const unsigned acMaxRightAccum = std::min(accumScore - leftMinAccum, rightMaxP);
+		const unsigned acMinLeftAccum = std::max(leftMinAccum, accumScore - acMaxRightAccum);
+		if (false) {
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "accumScore = " << accumScore << '\n';
+				std::cerr << "accumScore = " << accumScore << '\n';
+				std::cerr << "leftMinAccum = " << leftMinAccum << '\n';
+				std::cerr << "rightMinAccum = " << rightMinAccum << '\n';
+				std::cerr << "acMaxLeftAccum = " << acMaxLeftAccum << '\n';
+				std::cerr << "acMaxRightAccum = " << acMaxRightAccum << '\n';
+				std::cerr << "acMinLeftAccum = " << acMinLeftAccum << '\n';
+#			endif
+		}
+		// order N
+		for (unsigned leftAccum = acMinLeftAccum; leftAccum <= acMaxLeftAccum; ++leftAccum) {
+			const unsigned rightAccum = accumScore - leftAccum;
+			assert(rightAccum <= rightMaxP);
+			const ProbForParsScore & leftFPS = leftPI.getByParsScore(leftAccum);
+			const MaskToProbsByState * leftM2PBS = leftFPS.getMapPtrForDownPass(leftDown);
+			if (leftM2PBS == 0L) {
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ": left child empty row. Skipping...\n";
+#				endif
+				continue;
+			}
+			const ProbForParsScore & rightFPS = rightPI.getByParsScore(rightAccum);
+			const MaskToProbsByState * rightM2PBS = rightFPS.getMapPtrForDownPass(rightDown);
+			if (rightM2PBS == 0L) {
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ": right child empty row. Skipping...\n";
+#				endif
+				continue;
+			}
+			const BitFieldRow & leftSSRow = blob.statesSupersets[leftDown];
+			// order (2^k)
+			for (BitFieldRow::const_iterator lasIt = leftSSRow.begin(); lasIt != leftSSRow.end(); ++lasIt) {
+				const BitField leftAllStates = *lasIt;
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "from line: " << __LINE__<< ":	 leftAllStates="  << blob.toSymbol(leftAllStates) << '\n';
+#				endif
+				const std::vector<double> * leftProbs = getProbsForStatesMask(leftM2PBS, leftAllStates);
+				if (leftProbs == 0L) {
+#					if defined DEBUGGING_OUTPUT
+						std::cerr << "from line: " << __LINE__<< ": left child empty bin. Skipping...\n";
+#					endif
+					continue;
+				}
+				const BitFieldRow & rightSSRow = blob.statesSupersets[rightDown];
+				// order (2^k)
+				for (BitFieldRow::const_iterator rasIt = rightSSRow.begin(); rasIt != rightSSRow.end(); ++rasIt) {
+					const BitField rightAllStates = *rasIt;
+//					std::cerr << "from line: " << __LINE__<< ":	 rightAllStates="  << blob.toSymbol(rightAllStates) << '\n';
+					const std::vector<double> * rightProbs = getProbsForStatesMask(rightM2PBS, rightAllStates);
+					if (rightProbs == 0L) {
+//						std::cerr << "from line: " << __LINE__<< ": right child empty bin. Skipping...\n";
+						continue;
+					}
+					const BitField ancAllField = (rightAllStates|leftAllStates);
+
+					std::vector<double> * ancVec = getMutableProbsForStatesMask(&forCurrScoreDownPass, ancAllField);
+					if (ancVec == 0L) {
+						ancVec = &(forCurrScoreDownPass[ancAllField]);
+						ancVec->assign(blob.nRates*blob.nStates, 0.0);
+					}
+					probsAdded = true;
+//					std::cerr << __LINE__ << " adding:";
+//					std::cerr << " leftDown="  << blob.toSymbol(leftDown)  << " leftAccum="	 << leftAccum  << " leftAllStates="	 << blob.toSymbol(leftAllStates);
+//					std::cerr << " rightDown=" << blob.toSymbol(rightDown) << " rightAccum=" << rightAccum << " rightAllStates=" << blob.toSymbol(rightAllStates) << " \n";
+					addToAncProbVec(*ancVec, leftPMatVec, leftProbs, rightPMatVec, rightProbs, blob);
+				}
+			}
+		}
+	}
+	return probsAdded;
+}
+
+void ProbInfo::addToAncProbVecSymmetric(std::vector<double> & pVec,
+		const double *** leftPMatVec, const std::vector<double> * leftProbs,
+		const double *** rightPMatVec, const std::vector<double> * rightProbs,
+		const std::vector<unsigned int> & rightChildStateCodeTranslation,
+		const CommonInfo & blob) {
+	if (leftProbs == 0L || rightProbs == 0L)
+		return;
+	unsigned rOffset = 0;
+	// ignore loop over rates blob.nRates = 1
+	for (unsigned r = 0; r < blob.nRates; ++r) {
+		// this code looks up the correct transition prob matrix
+		const double ** leftPMat = leftPMatVec[r];
+		const double ** rightPMat = rightPMatVec[r];
+
+
+		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
+			double leftProb = 0.0;
+			double rightProb = 0.0;
+			for (unsigned desState = 0; desState < blob.nStates; ++desState) {
+
+				const double leftTiProb = leftPMat[ancState][desState];
+				const double leftAccumProb = (*leftProbs)[rOffset + desState];
+				leftProb += leftTiProb*leftAccumProb;
+
+
+				const unsigned int translatedState = rightChildStateCodeTranslation[desState];
+				const double rightTiProb = rightPMat[ancState][translatedState];
+				const double rightAccumProb = (*rightProbs)[rOffset + desState];
+#				if defined DEBUGGING_OUTPUT
+					std::cerr << "addToAncProbVecSymmetric tr = " << translatedState << " des " << desState << " rightTiProb= " << rightTiProb << " rightAccumProb = " << rightAccumProb <<'\n';
+#				endif
+				rightProb += rightTiProb*rightAccumProb;
+			}
+			pVec[rOffset + ancState] += leftProb*rightProb;
+		}
+		rOffset += blob.nStates;
+	}
+}
+
+void ProbInfo::addToAncProbVec(std::vector<double> & pVec,
+		const double *** leftPMatVec, const std::vector<double> * leftProbs,
+		const double *** rightPMatVec, const std::vector<double> * rightProbs,
+		const CommonInfo & blob) {
+	if (leftProbs == 0L || rightProbs == 0L)
+		return;
+	unsigned rOffset = 0;
+	// ignore loop over rates blob.nRates = 1
+	for (unsigned r = 0; r < blob.nRates; ++r) {
+		// this code looks up the correct transition prob matrix
+		const double ** leftPMat = leftPMatVec[r];
+		const double ** rightPMat = rightPMatVec[r];
+
+
+		for (unsigned ancState = 0; ancState < blob.nStates; ++ancState) {
+			double leftProb = 0.0;
+			double rightProb = 0.0;
+			for (unsigned desState = 0; desState < blob.nStates; ++desState) {
+				const double leftTiProb = leftPMat[ancState][desState];
+				const double leftAccumProb = (*leftProbs)[rOffset + desState];
+				leftProb += leftTiProb*leftAccumProb;
+
+
+
+				const double rightTiProb = rightPMat[ancState][desState];
+				const double rightAccumProb = (*rightProbs)[rOffset + desState];
+				rightProb += rightTiProb*rightAccumProb;
+			}
+			pVec[rOffset + ancState] += leftProb*rightProb;
+		}
+		rOffset += blob.nStates;
+	}
+}
+
+unsigned PatternSummary::incrementCount(unsigned s, BitField m, unsigned toAdd) {
+	if (s >= this->byParsScore.size())
+		this->byParsScore.resize(s + 1);
+	BitsToCount & mapper = this->byParsScore[s];
+	BitsToCount::iterator mIt = mapper.find(m);
+	if (mIt == mapper.end()) {
+		mapper[m] = toAdd;
+		return toAdd;
+	}
+	unsigned prev = mIt->second;
+	mIt->second = toAdd + prev;
+	return toAdd + prev;
+}
+
+void PatternSummary::write(std::ostream & out, const CommonInfo & blob) const {
+	const BitsToCount & constPatsMap = this->byParsScore[0];
+	for (std::vector<BitField>::const_iterator cIt = blob.singleStateCodes.begin(); cIt != blob.singleStateCodes.end(); ++cIt) {
+		BitsToCount::const_iterator queryIt = constPatsMap.find(*cIt);
+		unsigned obsCount = (queryIt == constPatsMap.end() ? 0 : queryIt->second);
+		out << "Observed steps = 0 states = " << blob.toSymbol(*cIt) << " count = " << obsCount	 << '\n';
+	}
+	for (unsigned score = 1; score < this->byParsScore.size(); ++score) {
+		const BitsToCount & currPatsMap = this->byParsScore[score];
+		for (std::vector<BitField>::const_iterator cIt = blob.multiStateCodes.begin(); cIt != blob.multiStateCodes.end(); ++cIt) {
+			BitsToCount::const_iterator queryIt = currPatsMap.find(*cIt);
+			unsigned obsCount = (queryIt == currPatsMap.end() ? 0 : queryIt->second);
+			const unsigned ns = blob.getNumStates(*cIt);
+			if (ns > 1 && (ns - 1) <= score) {
+				out << "Observed steps = " << score << " states = " << blob.toSymbol(*cIt) << " count = " << obsCount  << '\n';
+			}
+			else {
+				assert(obsCount == 0);
+			}
+		}
+	}
+}
+
+
+
+
+
+
