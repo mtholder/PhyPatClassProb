@@ -458,10 +458,10 @@ double calculateTransProb(int ancIndex,
 						  double edgeLen,
 						  const CommonInfo & blob) {
 	TiMatFunc fn = blob.tiMatFunc; 
-	/*
-	fn(leftEdgeLen, blob.firstMatVec.GetAlias());
+	
+	fn(edgeLen, blob.firstMatVec.GetAlias());
 	const double *** leftPMatVec = const_cast<const double ***>(blob.firstMatVec.GetAlias());
-	*/
+	
     return 1;
 }
 double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
