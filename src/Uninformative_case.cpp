@@ -330,9 +330,6 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 
 
 
-
-
-
 void JCTiMat(double edgeLength, TiMat pMat ) {
 #	if defined DEBUGGING_OUTPUT
 		std::cerr << "JCTiMat edgeLength = " << edgeLength << '\n';
