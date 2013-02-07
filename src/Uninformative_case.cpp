@@ -781,8 +781,6 @@ void CommonInfo::readModel(const std::vector<std::string> &optVec) {
 		}
 	}
 	this->stateFreqVector.assign(this->nStates, 1.0/this->nStates);
-
-
 	for (std::vector<std::string>::const_iterator ovIt = optVec.begin(); ovIt != optVec.end(); ++ovIt) {
 		const std::string opt = *ovIt;
 		assert(opt[0] == '-');
