@@ -106,6 +106,11 @@ int countBits(int x)
     }
     return num;
 }
+int convertIndexToBit(int);
+
+int convertIndexToBit(int ind) {
+    return 1 << ind; //bit shift
+}
 
 int convertBitToIndex(int);
 
@@ -128,6 +133,12 @@ int convertBitToIndex(int i)
     std::cerr << "Zero to Convert Bits! \n";
     exit(1);
 };
+
+vector<int> subsetsContainingGivenState(int, int);
+
+vector<int> subsetsContainingGivenState(int fullSet, int givenState) {
+
+}
 
 vector<int> subsetsOfGivenSize(int obsStSet, int numBits);
 
@@ -550,11 +561,11 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                     int numObsSt = countBits(obsStSet);
                     while(common>-2) /* or for(;;)*/ {
 
+                        ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
+                        std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+
                         if(common == -1) { //no comm state
                             if(currNdData->getNumLeaves()==numObsSt) {
-                                ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
-                                std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
-
                                 for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
                                     std::cerr << "ObsStSet " << obsStSet << '\n';
@@ -592,19 +603,26 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                             }
                         }
                         else {
-                            for(int a = 0; a < blob.nStates; a++) { //3 common cases will be structured here
-                                //if(common = -1) {
-                                //
-                                //}
-                                //int leftCommon = i;
-                                //int rightCommon = i;
-                                //else if(common > i) {
-                                //
-                                //}
-                                //else if(common < i) {
-                                //
-                                //}
-                                //else return 0;
+                            int commonBits = convertIndexToBit(common);
+                            for(int anc = 0; anc < blob.nStates; anc++) {
+                                currNdProbVec[anc] = 0.0;
+                                int leftCommSt, rightCommSt;
+                                leftCommSt = common;
+                                rightCommSt = common;
+                                vector<int> leftObsStSets = subsetsContainingGivenState(obsStSet, commonBits);
+                                // probability repeated in Both
+
+                                leftCommSt = -1;
+                                rightCommSt = common;
+                                //add probability when only right common
+
+                                leftCommSt = common;
+                                rightCommSt = -1;
+                                //add probability when only left common
+
+                                leftCommSt = -1;
+                                rightCommSt = -1;
+                                //add probability when neither common
 
                                 }
 
