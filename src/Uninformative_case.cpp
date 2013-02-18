@@ -107,29 +107,26 @@ int countBits(int x)
     return num;
 }
 
-int ConvertBitToIndex(int);
+int convertBitToIndex(int);
 
-int ConvertBitToIndex(int i)
+int convertBitToIndex(int i)
 {
-    int ind;
-    int bitNum; //i==bitNum?
+    int ind = 0;
     while(i > 0)
     {
-        if(i& 1) {  //do we need reference?
-            ind++;
-            i = (i>>1);
+        if(i == 1) {  //& = bitwise intersection operator NOT reference
+            return ind;
         }
 
-        else if(i& 3) {
-            ind++;
-            i = (i<<3);
+        if(i& 1) {
+            std::cerr << "Illegal Value to Convert Bits! \n";
+            exit(1);
         }
-
-        else {
-            i = 0;
-        }
-        return ind;
+       ind++;
+       i = (i>>1);
     }
+    std::cerr << "Zero to Convert Bits! \n";
+    exit(1);
 };
 
 vector<int> subsetsOfGivenSize(int obsStSet, int numBits);
@@ -555,9 +552,13 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 
                         if(common == -1) { //no comm state
                             if(currNdData->getNumLeaves()==numObsSt) {
-                               for(int anc = 0; anc < blob.nStates; anc++) {
+                                ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
+                                std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+
+                                for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
                                     std::cerr << "ObsStSet " << obsStSet << '\n';
+                                    currNdProbVec[anc] = 0.0;
                                     vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
                                     for(int j = 0; j < leftObsStSets.size(); j++) {
                                         int leftObsStSet = leftObsStSets[j];
@@ -577,19 +578,15 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         if(rightNodeData->getNumLeaves() == 1) {
                                             rightProb = calculateTransProb(anc, convertBitToIndex(rightObsStSet), rightEdgeLen, blob);
                                         }
-                                        else { rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
+                                        else {
+                                            rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
                                         }
 
 
-                                            for(int des = 0; des < blob.nStates; des++) {
-                                                std::cerr << "leftProb " << leftProb << '\n';
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
 
-                                                if(rightNodeData->getNumLeaves() == 1) {
-                                                	rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightChild->GetEdgeToParent().GetDblEdgeLen(), blob);
-                                                }
-                                                std::cerr << "rightProb " << rightProb << '\n'; //}?
 
-                                        }
                                     }
                                 }
                             }
