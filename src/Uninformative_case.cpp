@@ -97,8 +97,8 @@ int countBits(int);
 
 int countBits(int x)
 {
-    int num=0;
-    while(x>0)
+    int num = 0;
+    while(x > 0)
     {
         if(x& 1)
             ++num;
@@ -106,6 +106,31 @@ int countBits(int x)
     }
     return num;
 }
+
+int ConvertBitToIndex(int);
+
+int ConvertBitToIndex(int i)
+{
+    int ind;
+    int bitNum; //i==bitNum?
+    while(i > 0)
+    {
+        if(i& 1) {  //do we need reference?
+            ind++;
+            i = (i>>1);
+        }
+
+        else if(i& 3) {
+            ind++;
+            i = (i<<3);
+        }
+
+        else {
+            i = 0;
+        }
+        return ind;
+    }
+};
 
 vector<int> subsetsOfGivenSize(int obsStSet, int numBits);
 
@@ -123,7 +148,6 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
     }
     return vector<int> (subsets.begin(), subsets.end()); //creates iterators
 }
-
 
 
 //this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
