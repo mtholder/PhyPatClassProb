@@ -136,8 +136,19 @@ int convertBitToIndex(int i)
 
 vector<int> subsetsContainingGivenState(int, int);
 
-vector<int> subsetsContainingGivenState(int fullSet, int givenState) {
-
+vector<int> subsetsContainingGivenState(int fullSet, int givenState)
+{
+    set<int> subsets;
+    int i = 1;
+    while(i<=fullSet)
+    {
+        std::cerr << " subsetsContainingGivenState " << fullSet << " " << givenState << " " << i << "\n";
+        int j = i& fullSet;
+        if() //what to pass thru here?  Not comparing bits to get size...
+            subsets.insert(j);
+        i++;
+    }
+    return vector<int> (subsets.begin(), subsets.end());
 }
 
 vector<int> subsetsOfGivenSize(int obsStSet, int numBits);
