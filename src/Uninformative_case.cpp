@@ -144,7 +144,7 @@ vector<int> subsetsContainingGivenState(int fullSet, int givenState)
     {
         std::cerr << " subsetsContainingGivenState " << fullSet << " " << givenState << " " << i << "\n";
         int j = i& fullSet;
-        if() //what to pass thru here?  Not comparing bits to get size...
+        if(j& givenState)
             subsets.insert(j);
         i++;
     }
@@ -504,14 +504,14 @@ double calculateTransProb(int ancIndex,
 	const double ** tiMatrix = leftPMatVec[0];
     return tiMatrix[ancIndex][i];
 }
-double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
+double calcProbOfSubtreeForObsStSetAndComm(NodeDataStructure * subtreeData,
 	                         int ancIndex,
-	                         int obsBits,
+	                         int obsBits, int commonStates,
 	                         double edgeLen,
 	                         const CommonInfo & blob){
     double p = 0.0;
     ProbForObsStateSet & childProbSet = subtreeData->getForObsStateSet(obsBits);
-    std::vector<double> & childProb = childProbSet.getProbForCommState(-1);
+    std::vector<double> & childProb = childProbSet.getProbForCommState(commonStates);
     for(int i = 0; i<blob.nStates; i++) {
         double transProb = calculateTransProb(ancIndex, i, edgeLen, blob); //includes lib so Mark will write this func
         double partialLike = childProb[i];
@@ -521,6 +521,14 @@ double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
 	return p;
 }
 
+
+double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
+	                         int ancIndex,
+	                         int obsBits,
+	                         double edgeLen,
+	                         const CommonInfo & blob){
+    return calcProbOfSubtreeForObsStSetAndComm(subtreeData, ancIndex, obsBits, -1, edgeLen, blob);
+}
 
 
 void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
@@ -617,33 +625,98 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                 int leftCommSt, rightCommSt;
                                 leftCommSt = common;
                                 rightCommSt = common;
-                                vector<int> leftObsStSets = subsetsContainingGivenState(obsStSet, commonBits);
-                                // probability repeated in Both
+                                vector<int> obsStSetsWithComm = subsetsContainingGivenState(obsStSet, commonBits); //prob for both
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int leftObsStSet = obsStSetsWithComm[j];
+                                        int rightObsStSet = obsStSet - leftObsStSet + commonBits;
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, common, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, common, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                    }
 
                                 leftCommSt = -1;
                                 rightCommSt = common;
-                                //add probability when only right common
+                                //add probability when only right common, left not repeated
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, common, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                        //Now consider when the left is not displayed by commonBits as observed States
+                                        leftObsStSet = obsStSet - rightObsStSet;
+                                        if(leftObsStSet != 0) {
+                                            leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                            jointNdProb = leftProb * rightProb;
+                                            currNdProbVec[anc] += jointNdProb;
+                                        }
+                                    }
 
-                                leftCommSt = common;
+
+                                leftCommSt = common; //do this on my own (opp from above)
                                 rightCommSt = -1;
                                 //add probability when only left common
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, common, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                        //Now consider when the right is not displayed by commonBits as observed States
+                                        rightObsStSet = obsStSet - leftObsStSet;
+                                        if(rightObsStSet != 0) {
+                                            rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                            jointNdProb = leftProb * rightProb;
+                                            currNdProbVec[anc] += jointNdProb;
+                                        }
+                                    }
+
 
                                 leftCommSt = -1;
                                 rightCommSt = -1;
                                 //add probability when neither common
-
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
                                 }
-
-                        }
 
 
                             common = getNextCommStSet(obsStSet, common);
 
+                            }
                         }
-                }
 
-			}
-		}
+                    }
+                }
+            }
+        }
 	}
 	catch (...) {
 		throw;
