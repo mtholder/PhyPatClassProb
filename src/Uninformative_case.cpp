@@ -15,6 +15,8 @@
 #include "pytbeaglehon/ccore/internal_like_calc_env.h"
 NxsString errormsg;
 
+#define DEBUGGING_OUTPUT 1
+
 using namespace std;
 
 void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo);
@@ -581,6 +583,10 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                         std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
 
                         if(common == -1) { //no comm state
+ #							if defined DEBUGGING_OUTPUT
+                        		std::cerr << __LINE__ <<  " currNdData->getNumLeaves() = " << currNdData->getNumLeaves() << "\n";
+                        		std::cerr << __LINE__ <<  " numObsSt = " << numObsSt << "\n";
+ #							endif
                             if(currNdData->getNumLeaves()==numObsSt) {
                                 for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
