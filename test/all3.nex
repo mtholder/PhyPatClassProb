@@ -1,0 +1,90 @@
+#NEXUS
+begin paup;
+    log start replace;
+end;
+begin taxa;
+	dimensions ntax = 3;
+	taxlabels one two three;
+end;
+
+begin characters;
+	dimensions nchar = 256;
+	format datatype = dna interleave;
+	matrix 
+		one 	AAAA AAAA AAAA AAAA 
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	AAAA AAAA AAAA AAAA 
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	CCCC CCCC CCCC CCCC 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	CCCC CCCC CCCC CCCC
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	GGGG GGGG GGGG GGGG
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	GGGG GGGG GGGG GGGG 
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		AAAA AAAA AAAA AAAA 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	TTTT TTTT TTTT TTTT 
+		two		CCCC CCCC CCCC CCCC 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		GGGG GGGG GGGG GGGG 
+		three 	AAAA CCCC GGGG TTTT 
+
+		one 	TTTT TTTT TTTT TTTT
+		two		TTTT TTTT TTTT TTTT 
+		three 	AAAA CCCC GGGG TTTT ;
+end;
+
+begin paup;
+    set storebrlens;
+end;
+begin trees;
+	
+	tree mine = [&U]  [ ((2:0.01,3:0.02):0.04,1:0.08,4:0.1); ]
+ ( 1 : 0.08 , ( 2 : 0.01 ,	3 : 0.02 ) : 0.04 );
+end;
+begin paup;
+    lscore / user nst = 1 basefreq = eq pinv = 0 rates = eq sitelike ScoreFile = paupsitelikes replace;
+end;    
+    
