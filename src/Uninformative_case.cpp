@@ -15,6 +15,8 @@
 #include "pytbeaglehon/ccore/internal_like_calc_env.h"
 NxsString errormsg;
 
+#define DEBUGGING_OUTPUT
+
 using namespace std;
 
 void freeProbInfo(const std::vector<const NxsSimpleNode *> & preorderVec, NodeIDToProbInfo & nodeIDToProbInfo);
@@ -171,7 +173,10 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
 
 //this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
 int getNextCommStSet(const int obsStSet, int i) {
-    int ind;
+#	if defined DEBUGGING_OUTPUT
+				     std::cerr << "from line " << __LINE__ << ":  getNextCommStSet " ; std::cerr << "obsStSet =  " << obsStSet << " i = "<< i << "\n";
+#	endif
+   int ind;
     int binRep;
     if(i==-1) {
         ind = 0; //index of state in normal counting sequence
@@ -545,7 +550,7 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 			std::vector<NxsSimpleNode *> children = nd->GetChildren();
 			const unsigned numChildren = children.size();
 #			if defined DEBUGGING_OUTPUT
-				std::cerr << "from line " << __LINE__ << ":\n" ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+				std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
 #			endif
 			NodeID currNdId(nd, 0);
 			NodeDataStructure * currNdData = new NodeDataStructure(blob.nStates); //curNdData = ancestor (in lower loop)
@@ -569,18 +574,30 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                 NxsSimpleNode * rightChild = children[1];
                 NodeDataStructure * rightNodeData = node2dataMap[rightChild];
                 currNdData->setNumLeaves(leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves());
+#			if defined DEBUGGING_OUTPUT
+				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "currNdData->setNumLeaves set to " << leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves() << "\n";
+#			endif
 
                 stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
                 for(; ssCit!=blob.stateSetEnd(); ++ssCit){
                     const int & obsStSet = *ssCit; //'dereferencing' it
                     int common = -1;
                     int numObsSt = countBits(obsStSet);
-                    while(common>-2) /* or for(;;)*/ {
+#			if defined DEBUGGING_OUTPUT
+				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "obsStSet =  " << obsStSet << " numObsSt = "<< numObsSt << "\n";
+#			endif
+                  while(common>-2) /* or for(;;)*/ { // loop over common
 
                         ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
                         std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+#			            if defined DEBUGGING_OUTPUT
+                                std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
+#			            endif
 
                         if(common == -1) { //no comm state
+#                            if defined DEBUGGING_OUTPUT
+                                //std::cerr << __LINE__ << " currNdData->getNumLeaves() = " << currNDData->getNumLeaves() << '\n';
+#                            endif
                             if(currNdData->getNumLeaves()==numObsSt) {
                                 for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
@@ -707,12 +724,10 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
                                         currNdProbVec[anc] += jointNdProb;
                                 }
 
-
-                            common = getNextCommStSet(obsStSet, common);
-
                             }
-                        }
 
+                        }
+                        common = getNextCommStSet(obsStSet, common);
                     }
                 }
             }
