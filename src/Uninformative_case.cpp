@@ -595,9 +595,10 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 #			            endif
 
                         if(common == -1) { //no comm state
-#                            if defined DEBUGGING_OUTPUT
-                                //std::cerr << __LINE__ << " currNdData->getNumLeaves() = " << currNDData->getNumLeaves() << '\n';
-#                            endif
+ #							if defined DEBUGGING_OUTPUT
+                        		std::cerr << __LINE__ <<  " currNdData->getNumLeaves() = " << currNdData->getNumLeaves() << "\n";
+                        		std::cerr << __LINE__ <<  " numObsSt = " << numObsSt << "\n";
+ #							endif
                             if(currNdData->getNumLeaves()==numObsSt) {
                                 for(int anc = 0; anc < blob.nStates; anc++) {
                                     //vector<int> subsetsOfGivenSize(int, int);
