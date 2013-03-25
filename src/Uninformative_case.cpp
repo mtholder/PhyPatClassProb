@@ -173,7 +173,7 @@ vector<int> subsetsOfGivenSize(int obsStSet, int numBits)
 
 //this function will give a -1 initially, and will return the index for the next state in the obs. ss, else -2
 int getNextCommStSet(const int obsStSet, int i) {
-#	if defined DEBUGGING_OUTPUT
+#	if defined DEBUGGING_OUTPUT2
 				     std::cerr << "from line " << __LINE__ << ":  getNextCommStSet " ; std::cerr << "obsStSet =  " << obsStSet << " i = "<< i << "\n";
 #	endif
    int ind;
@@ -379,7 +379,7 @@ void ProbInfo::createForTip(const CommonInfo & blob) {
 
 
 void JCTiMat(double edgeLength, TiMat pMat ) {
-#	if defined DEBUGGING_OUTPUT
+#	if defined DEBUGGING_OUTPUT3
 		std::cerr << "JCTiMat edgeLength = " << edgeLength << '\n';
 #	endif
 	const double exp_term = exp(-(4.0/3.0)*edgeLength);
@@ -402,18 +402,18 @@ void JCTiMat(double edgeLength, TiMat pMat ) {
 	pMat[3][1] = prob_change;
 	pMat[3][2] = prob_change;
 	pMat[3][3] = prob_nochange;
-#	if defined DEBUGGING_OUTPUT
+#	if defined DEBUGGING_OUTPUT3
 		std::cerr << "from line " << __LINE__ << ":\n" ;  std::cerr << "edgeLength = " << edgeLength << " probs = " << prob_nochange << ", " << prob_change << "\n";
 #	endif
 }
 
 void JCMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 	assert(gBlob);
-#	if defined DEBUGGING_OUTPUT
+#	if defined DEBUGGING_OUTPUT3
 		std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
 #	endif
 	for (unsigned i = 0; i < gBlob->rates.size(); ++i) {
-#		if defined DEBUGGING_OUTPUT
+#		if defined DEBUGGING_OUTPUT3
 			std::cerr << "JCMulitCatTiMat gBlob->rates[" << i << "] = " << gBlob->rates[i] << '\n';
 #		endif
 		JCTiMat(edgeLength*(gBlob->rates[i]), pMatVec[i]); //@TEMP JC
@@ -536,74 +536,38 @@ double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
 }
 
 
-void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
+void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootData,
 													 std::ostream & out,
 													 const CommonInfo & blob) {
-	cout << "blah\n";
-	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
-	std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
-
-	try {
-		int ndInd = preorderVec.size() - 1;
-		for (; ndInd >= 0; --ndInd) {
-			const NxsSimpleNode * nd = preorderVec[ndInd];
-			std::vector<NxsSimpleNode *> children = nd->GetChildren();
-			const unsigned numChildren = children.size();
-#			if defined DEBUGGING_OUTPUT
-				std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+	stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
+    for(; ssCit!=blob.stateSetEnd(); ++ssCit){
+        const int & obsStSet = *ssCit; //'dereferencing' it
+        int common = -1;
+        int numObsSt = countBits(obsStSet);
+#		if defined DEBUGGING_OUTPUT2
+		    std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "obsStSet =  " << obsStSet << " numObsSt = "<< numObsSt << "\n";
+#		endif
+        while(common>-2) /* or for(;;)*/ { // loop over common
+            ProbForObsStateSet & currNdProbSet = rootData->getForObsStateSet(obsStSet);
+            std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+#			if defined DEBUGGING_OUTPUT2
+                std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
 #			endif
-			NodeID currNdId(nd, 0);
-			NodeDataStructure * currNdData = new NodeDataStructure(blob.nStates); //curNdData = ancestor (in lower loop)
-			node2dataMap[nd] = currNdData;
-			if (numChildren == 0) {
-				for(int i=0; i<blob.nStates; i++)
-				{
-					int ss=1 << i;
-					ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
-					std::vector<double> & v = p.getProbForCommState(-1);
-					v[i] = 1.0;
-                    currNdData->setNumLeaves(1);
-				}
-			}
-			else {
-				if (numChildren != 2)
-					throw NxsException("Trees must be of degree 2\n");
-                NxsSimpleNode * leftChild = children[0];
-                NodeDataStructure * leftNodeData = node2dataMap[leftChild];
-
-                NxsSimpleNode * rightChild = children[1];
-                NodeDataStructure * rightNodeData = node2dataMap[rightChild];
-                currNdData->setNumLeaves(leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves());
-#			if defined DEBUGGING_OUTPUT
-				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "currNdData->setNumLeaves set to " << leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves() << "\n";
-#			endif
-
-                stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
-                for(; ssCit!=blob.stateSetEnd(); ++ssCit){
-                    const int & obsStSet = *ssCit; //'dereferencing' it
-                    int common = -1;
-                    int numObsSt = countBits(obsStSet);
-#			if defined DEBUGGING_OUTPUT
-				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "obsStSet =  " << obsStSet << " numObsSt = "<< numObsSt << "\n";
-#			endif
-                  while(common>-2) /* or for(;;)*/ { // loop over common
-
-                        ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
-                        std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
-#			            if defined DEBUGGING_OUTPUT
-                                std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
-#			            endif
-
-                        if(common == -1) { //no comm state
- #							if defined DEBUGGING_OUTPUT
-                        		std::cerr << __LINE__ <<  " currNdData->getNumLeaves() = " << currNdData->getNumLeaves() << "\n";
-                        		std::cerr << __LINE__ <<  " numObsSt = " << numObsSt << "\n";
- #							endif
-                            if(currNdData->getNumLeaves()==numObsSt) {
-                                for(int anc = 0; anc < blob.nStates; anc++) {
-                                    //vector<int> subsetsOfGivenSize(int, int);
-                                    std::cerr << "ObsStSet " << obsStSet << '\n';
-                                    currNdProbVec[anc] = 0.0;
+            if(common == -1) { //no comm state
+               	if(rootData->getNumLeaves()==numObsSt) {
+              		double p = 0.0;
+                    for(int anc = 0; anc < blob.nStates; anc++) {
+                        p += currNdProbVec[anc];
+                    }
+                    out << "Prob(obs state set = " << obsStSet << " , no repeated states) = " << p << std::endl;
+                }
+            }
+            common = getNextCommStSet(obsStSet, common);
+ 
+        }
+    }
+}
+#if 0
                                     vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
                                     for(int j = 0; j < leftObsStSets.size(); j++) {
                                         int leftObsStSet = leftObsStSets[j];
@@ -737,6 +701,248 @@ void calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
 	catch (...) {
 		throw;
 	}
+	//std::vector<const NxsSimplenode.....
+	//
+	//if(tipProbInfo = constant)
+	//else if(tipProbInfo changes) ....
+	//return false;
+	//
+	//bool needToDelRootProbInfo = true;	<--should this be true since it's ininformative?
+	//Do we not need 'tipProbInfo.createForTip(blob); (since we don't need to know the tip info?)
+	//
+	//
+	//if (blob.isSymmetric) {
+	//				currProbInfo->calculateSymmetric(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										tiMatFunc, blob);
+	//			}
+	//			else {
+	//				currProbInfo->calculate(*leftPI, leftNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										*rightPI, rightNd->GetEdgeToParent().GetDblEdgeLen(),
+	//										tiMatFunc, blob);
+	//will the above stuff be the same?
+	//
+	//
+	//need to define Z, t,c,a (t observed states) (c common state - for c=-1 we will have no repeated states)
+	// for(c=-1)
+	//		{nStates = -1}
+	//
+	//
+}
+#endif
+
+ NodeDataStructure * calculateUninformativePatternClassProbabilities(const NxsSimpleTree & tree,
+													 std::ostream & out,
+													 const CommonInfo & blob) {
+	cout << "blah\n";
+	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
+	std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
+	NodeDataStructure * currNdData = 0L;
+	try {
+		int ndInd = preorderVec.size() - 1;
+		for (; ndInd >= 0; --ndInd) {
+			const NxsSimpleNode * nd = preorderVec[ndInd];
+			std::vector<NxsSimpleNode *> children = nd->GetChildren();
+			const unsigned numChildren = children.size();
+#			if defined DEBUGGING_OUTPUT
+				std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "In calculateUninformativePatternClassProbabilities at node " << nd->GetTaxonIndex() << ", #children = " << numChildren << "\n";
+#			endif
+			NodeID currNdId(nd, 0);
+			currNdData = new NodeDataStructure(blob.nStates); //curNdData = ancestor (in lower loop)
+			node2dataMap[nd] = currNdData;
+			if (numChildren == 0) {
+				for(int i=0; i<blob.nStates; i++)
+				{
+					int ss=1 << i;
+					ProbForObsStateSet & p = currNdData->getForObsStateSet(ss);
+					std::vector<double> & v = p.getProbForCommState(-1);
+					v[i] = 1.0;
+                    currNdData->setNumLeaves(1);
+				}
+			}
+			else {
+				if (numChildren != 2)
+					throw NxsException("Trees must be of degree 2\n");
+                NxsSimpleNode * leftChild = children[0];
+                NodeDataStructure * leftNodeData = node2dataMap[leftChild];
+
+                NxsSimpleNode * rightChild = children[1];
+                NodeDataStructure * rightNodeData = node2dataMap[rightChild];
+                currNdData->setNumLeaves(leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves());
+#			if defined DEBUGGING_OUTPUT
+				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "currNdData->setNumLeaves set to " << leftNodeData->getNumLeaves()+rightNodeData->getNumLeaves() << "\n";
+#			endif
+
+                stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
+                for(; ssCit!=blob.stateSetEnd(); ++ssCit){
+                    const int & obsStSet = *ssCit; //'dereferencing' it
+                    int common = -1;
+                    int numObsSt = countBits(obsStSet);
+#			if defined DEBUGGING_OUTPUT
+				     std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << "obsStSet =  " << obsStSet << " numObsSt = "<< numObsSt << "\n";
+#			endif
+                  while(common>-2) /* or for(;;)*/ { // loop over common
+
+                        ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
+                        std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+#			            if defined DEBUGGING_OUTPUT
+                                std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
+#			            endif
+
+                        if(common == -1) { //no comm state
+ #							if defined DEBUGGING_OUTPUT
+                        		std::cerr << __LINE__ <<  " currNdData->getNumLeaves() = " << currNdData->getNumLeaves() << "\n";
+                        		std::cerr << __LINE__ <<  " numObsSt = " << numObsSt << "\n";
+ #							endif
+                            if(currNdData->getNumLeaves()==numObsSt) {
+                                for(int anc = 0; anc < blob.nStates; anc++) {
+                                    //vector<int> subsetsOfGivenSize(int, int);
+                                    std::cerr << "ObsStSet " << obsStSet << '\n';
+                                    currNdProbVec[anc] = 0.0;
+                                    vector<int> leftObsStSets = subsetsOfGivenSize(obsStSet, leftNodeData->getNumLeaves());
+                                    for(int j = 0; j < leftObsStSets.size(); j++) {
+                                        int leftObsStSet = leftObsStSets[j];
+                                        int rightObsStSet = obsStSet - leftObsStSet;
+#							if defined DEBUGGING_OUTPUT2
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+#endif
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        if(leftNodeData->getNumLeaves() == 1) {
+                                            leftProb = calculateTransProb(anc, convertBitToIndex(leftObsStSet), leftEdgeLen, blob);
+                                        }
+                                        else {
+                                        	leftProb = calcProbOfSubtreeForObsStSetNoRepeated(leftNodeData, anc, leftObsStSet, leftEdgeLen, blob);
+                                        }
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+
+                                        if(rightNodeData->getNumLeaves() == 1) {
+                                            rightProb = calculateTransProb(anc, convertBitToIndex(rightObsStSet), rightEdgeLen, blob);
+                                        }
+                                        else {
+                                            rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
+                                        }
+
+
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+
+
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            int commonBits = convertIndexToBit(common);
+                            for(int anc = 0; anc < blob.nStates; anc++) {
+                                currNdProbVec[anc] = 0.0;
+                                int leftCommSt, rightCommSt;
+                                leftCommSt = common;
+                                rightCommSt = common;
+                                vector<int> obsStSetsWithComm = subsetsContainingGivenState(obsStSet, commonBits); //prob for both
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int leftObsStSet = obsStSetsWithComm[j];
+                                        int rightObsStSet = obsStSet - leftObsStSet + commonBits;
+#							if defined DEBUGGING_OUTPUT2
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+#endif
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, common, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, common, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                    }
+
+                                leftCommSt = -1;
+                                rightCommSt = common;
+                                //add probability when only right common, left not repeated
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+#							if defined DEBUGGING_OUTPUT2
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+#endif
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, common, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                        //Now consider when the left is not displayed by commonBits as observed States
+                                        leftObsStSet = obsStSet - rightObsStSet;
+                                        if(leftObsStSet != 0) {
+                                            leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                            jointNdProb = leftProb * rightProb;
+                                            currNdProbVec[anc] += jointNdProb;
+                                        }
+                                    }
+
+
+                                leftCommSt = common; //do this on my own (opp from above)
+                                rightCommSt = -1;
+                                //add probability when only left common
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+#							if defined DEBUGGING_OUTPUT2
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+#endif
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, common, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                        //Now consider when the right is not displayed by commonBits as observed States
+                                        rightObsStSet = obsStSet - leftObsStSet;
+                                        if(rightObsStSet != 0) {
+                                            rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                            jointNdProb = leftProb * rightProb;
+                                            currNdProbVec[anc] += jointNdProb;
+                                        }
+                                    }
+
+
+                                leftCommSt = -1;
+                                rightCommSt = -1;
+                                //add probability when neither common
+                                for(int j = 0; j < obsStSetsWithComm.size(); j++) {
+                                        int rightObsStSet = obsStSetsWithComm[j];
+                                        int leftObsStSet = obsStSet - rightObsStSet + commonBits;
+#							if defined DEBUGGING_OUTPUT2
+                                        std::cerr << "rightObsStSet " << rightObsStSet << '\n';
+                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+#endif
+                                        double leftProb, rightProb;
+                                        double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
+                                        leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                        double rightEdgeLen = rightChild->GetEdgeToParent().GetDblEdgeLen();
+                                        rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
+                                        double jointNdProb = leftProb * rightProb;
+                                        currNdProbVec[anc] += jointNdProb;
+                                }
+
+                            }
+
+                        }
+                        common = getNextCommStSet(obsStSet, common);
+                    }
+                }
+            }
+        }
+	}
+	catch (...) {
+		throw;
+	}
+	return currNdData;
 	//std::vector<const NxsSimplenode.....
 	//
 	//if(tipProbInfo = constant)
@@ -1277,9 +1483,10 @@ int main(int argc, char * argv[]) {
 				if (ftd.AllEdgesHaveLengths()) {
 					NxsSimpleTree nclTree(ftd, 0, 0.0);
 					blob.tiMatFunc = JCMulitCatTiMat; //@TEMP JC GenericMulitCatTiMat;
-					calculateUninformativePatternClassProbabilities(nclTree,
-																	std::cout,
-																	blob);
+					NodeDataStructure * rootData =  calculateUninformativePatternClassProbabilities(nclTree,
+																									std::cout,
+																									blob);
+					summarizeUninformativePatternClassProbabilities(rootData, std::cout, blob);
 
 /*
 					if (false) {
