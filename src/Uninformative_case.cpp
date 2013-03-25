@@ -427,7 +427,7 @@ void GenericMulitCatTiMat(double edgeLength, TiMatVec pMatVec) {
 	gBlob->scaledEdgeLengths.resize(gBlob->nRates);
 	gBlob->modelIndexVector.resize(gBlob->nRates);
 #	if defined DEBUGGING_OUTPUT
-		std::cerr << "JCMulitCatTiMat edgeLength = " << edgeLength << '\n';
+		std::cerr << "GenericMulitCatTiMat edgeLength = " << edgeLength << '\n';
 #	endif
 	for (int i = 0; i < gBlob->nRates; ++i) {
 		gBlob->scaledEdgeLengths[i] = edgeLength*gBlob->rates[i];
@@ -1276,10 +1276,10 @@ int main(int argc, char * argv[]) {
 				const NxsFullTreeDescription & ftd = treesBlock->GetFullTreeDescription(treeInd);
 				if (ftd.AllEdgesHaveLengths()) {
 					NxsSimpleTree nclTree(ftd, 0, 0.0);
-					blob.tiMatFunc = GenericMulitCatTiMat;
+					blob.tiMatFunc = JCMulitCatTiMat; //@TEMP JC GenericMulitCatTiMat;
 					calculateUninformativePatternClassProbabilities(nclTree,
 																	std::cout,
-																	blob); //@TEMP JC
+																	blob);
 
 /*
 					if (false) {
