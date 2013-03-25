@@ -98,7 +98,7 @@ end;
 begin trees;
 	
 	tree mine = [&U]  
- ( 1 : 0.08 , ( 2 : 0.01 ,	3 : 0.02 ) : 0.04 , 4 : 0.1 );
+ ( 1 : 0.005 , (( 2 : 0.01 ,	3 : 0.01 ) : 0.01 , 4 : 0.1 ) : 0.05);
 end;
 begin paup;
     lscore / user nst = 1 basefreq = eq pinv = 0 rates = eq sitelike ScoreFile = paupsitelikes replace;
