@@ -1,0 +1,30 @@
+#NEXUS
+begin paup;
+    log start replace;
+end;
+begin taxa;
+	dimensions ntax = 2;
+	taxlabels one two;
+end;
+
+begin characters;
+	dimensions nchar = 16;
+	format datatype = dna interleave;
+	matrix 
+		one		AAAA CCCC GGGG TTTT 
+		two 	ACGT ACGT ACGT ACGT 
+;
+end;
+
+begin paup;
+    set storebrlens;
+end;
+begin trees;
+	
+	tree mine = [&U]  [ ((2:0.01,3:0.02):0.04,1:0.08,4:0.1); ]
+ ( one : 0.01 ,	two : 0.02 );
+end;
+begin paup;
+    lscore / user nst = 1 basefreq = eq pinv = 0 rates = eq sitelike ScoreFile = paupsitelikes replace;
+end;    
+    

@@ -892,7 +892,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                         int leftObsStSet = obsStSet - rightObsStSet + commonBits;
 #							if defined DEBUGGING_OUTPUT2
                                         std::cerr << "rightObsStSet " << rightObsStSet << '\n';
-                                        std::cerr << "leftObsStSet " << leftObsStSet << '\n';
+                                        std::cerr << "leftObsSmatSet " << leftObsStSet << '\n';
 #endif
                                         double leftProb, rightProb;
                                         double leftEdgeLen = leftChild->GetEdgeToParent().GetDblEdgeLen();
