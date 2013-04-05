@@ -25,9 +25,9 @@
 
 %%% Color Definitions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\definecolor{bordercol}{RGB}{40,40,40}
-\definecolor{headercol1}{RGB}{186,215,215}
-\definecolor{headercol2}{RGB}{100,160,255}
+\definecolor{bordercol}{RGB}{0,0,0}
+\definecolor{headercol1}{RGB}{186,186,186}
+\definecolor{headercol2}{RGB}{90,110,200}
 \definecolor{headerfontcol}{RGB}{0,0,0}
 \definecolor{boxcolor}{RGB}{225,225,225}
 
@@ -83,7 +83,7 @@
 }
 %%% Title %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {\bf
-	Algorithms for Calculating Pattern Class Probabilities on Phylogenetic Trees
+	Algorithms for Calculating Pattern Class Probabilities on Parsimony-Uninformative Trees
 }
 %%% Authors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {
@@ -107,25 +107,19 @@
 %	}
 }
 
-\headerbox{Introduction}{name=intro,column=0,row=0}{
-A  variety of evolutionary analyses are based upon the coupling of phylogenetic trees with models of how biological traits change during evolution. 
-Felsenstein's \citep{Felsenstein1981} pruning algorithm makes it feasible to calculate the probability of any particular pattern of data arising on a phylogeny. 
-In some contexts, one needs to calculate the probability that {\bf any member of a class of patterns} will arise on the tree. 
-For example, the model adequacy approach of Waddell et al. (2009) requires calculating the probability of several classes of patterns.  
-Extending the morphological models of Lewis \citep{Lewis2001} to deal with many data sets requires calculating the probability of any parsimony-informative pattern arising (`parsimony' referring to the simplest explanation of the data, and parsimony-informative referring to those patterns which affect phylogenetic estimation). 
-Currently, applications of the approaches of Waddell {\em et al.~}\citep{WaddellOP2009} and Lewis\citep{Lewis2001} are limited because the only known methods for calculating the probability of a class of patterns involve either simulating a large amount of data or exhaustively considering every member of the class. Neither approach is feasible on large trees.
-
-We are developing {\bf efficient, dynamic programming algorithms} to calculate the probabilities of pattern classes in one pass down a phylogenetic tree. The algorithms include a general approach (applicable to any standard model of character evolution) as well as optimizations for the fully symmetric models (e.g. those of Lewis\citep{Lewis2001}). We are implementing these algorithms in open source software written in C++, and plan to include the approaches in the GARLI \citep{GARLI} software package for use in inferring evolutionary trees.
+\headerbox{Abstract}{name=intro,column=0,row=0}{
+A wide variety of evolutionary analyses are based upon the pairing of phylogenetic trees with models of how biological traits change during evolution. In some contexts, one needs to calculate the probability that any member of a class of patterns will arise on the tree. For example, the model adequacy approach of Waddell et al. (2009) requires calculating the probability of several classes of patterns. In order to extend Lewis's morphological models to deal with many data sets, calculating the probability of any parsimony-informative pattern arising is required (`parsimony' referring to the simplest explanation of the data, and `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
+ \vskip 1em
+We recently developed an algorithm that includes a general approach applicable to any standard model of character evolution, which was published in a peer-reviewed journal article online.  We validated our data against Waddell’s simulations, and performed run-time checks to ensure accuracy.Now, we are working to develop efficient, dynamic programming algorithms, which calculate the probabilities of pattern classes in one pass down a phylogenetic tree.  Focusing on parsimony-uninformative patterns, that is, optimizations for the fully symmetric models, we are now implementing these algorithms in open-source software written in C++ and plan to include the approaches in the GARLI software package for use in inferring evolutionary trees.
 %
 }
 
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
 \begin{compactenum}
-\item Devise algorithms which will calculate the probabilities of classes of patterns in phylogenetic binary trees.  
-\item Develop specialized versions for fully symmetric models in which all states are equivalent.
+\item Develop specialized algorithms for fully symmetric models in which all states are equivalent.
 \item Implement the algorithms into testing software in C++
 \item Add the algorithms to GARLI for use in phylogenetic inference
-%  This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software.
+(This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software).
 \end{compactenum}
 }
 
@@ -137,11 +131,13 @@ We are developing {\bf efficient, dynamic programming algorithms} to calculate t
 		\caption{Gene tree for RAG-1 sequences used by Waddell {\em et al.~}\citep{WaddellOP2009}. Branch lengths are shown in proportion to the expected number of changes per site. Our algorithm can calculate quantities such as ``the probability of a character evolving on this tree and showing states A and C and a parsimony length of 5''}\label{waddellTreeFig}
 	\vskip -1.0em
 \end{wrapfigure}
-Both the model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model entail calculations based on classes of patterns that share the same parsimony length on a tree.
+The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
+
 The model adequacy test also requires partitioning patterns based on the set of states observed at the leaves of the tree.
 Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the parsimony score.
+
 The Fitch algorithm can calculate the parsimony length for a tree rooted at an internal node from a ``downpass state set'' for the children of the node.
-We have developed a dynamic programming algorithm that can calculate the probability of class of patterns that share the same set of observed states and parsimony length on a tree.\\
+We have developed a dynamic programming algorithm that can calculate the probability of classes of patterns that share the same set of observed states and parsimony length on a tree.\\
 For a tree of $N$ leaves, the algorithm requires storing bins of probability for:
 \begin{compactitem}
 	\item each of the $N-1$ internal nodes,
@@ -154,8 +150,16 @@ yielding an approximate memory requirement of $\mathcal{O}(N^2 k 2^{2k}$).
 $k$ is bounded and often small ($k=4$ for DNA data).
 With respect to tree size, calculations scale $\mathcal{O}(N^3).$
 Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on the tree shown in Figure \ref{waddellTreeFig} to obtain probabilities for classes of patterns.
-We validated our algorithm with the same data and confirmed very similar probability calculations (data not shown).
+We validated our algorithm with the same data and confirmed very similar probability calculations (Figure 2).
+%INPUT TABLE PDF
 %This figure represents a phylogenetic tree which uses this data to perform pairwise tests.  
+\begin{wrapfigure}{r}{15em}
+	\vskip -1.5em
+		\includegraphics[width=15em]{Log2RunTimeGraph}
+	\vskip -.5em
+	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
+\end{wrapfigure}
+
 }
 \headerbox{Specializing for the Symmetric Models}{name=results2,span=2,column=1,below=results}{
 \begin{wrapfigure}{r}{15em}
@@ -164,33 +168,31 @@ We validated our algorithm with the same data and confirmed very similar probabi
 	\vskip -.5em
 	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 \end{wrapfigure}
-We are in the process of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
-Many of the probability calculations return the same answer in these models.
-Exploiting the fact that distinct combinations give the same result allows the answer to be calculated with fewer operations. 
+We are in the last stages of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
+In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
 We can sketch out a rough computational complexity for a symmetric version of the algorithm.
-The exact nature of the observed and downpass state sets do not need to considered.
+The exact nature of the observed and downpass state sets are not relevant here.
 Rather, we can focus on the size of these sets.  
 There are only $k$ distinct sizes (from $1$ to $k$) rather than $2^{k}-1$ state sets.
-This unveils the potential for drastic improvement and simplification in the algorithm.\\
+This allows for drastic improvement and simplification in the algorithm.\\
 {\bf Figure \ref{symmetryFig}} shows a graph representing the calculations required for 
 a scenario in which an internal node has the down pass state set of $\{0\}$.
 Under a fully symmetric model, the state sets of the same size (e.g. $\{0,1\}$ and $\{0,2\}$) will imply the same probabilities.
 While there are 9 combinations of states sets, there are only 6 combinations of state set sizes.
 The time savings for this model expand for larger values of $k$.
-Applying a symmetric model specialization will enable considerations of characters with many more states.
+A symmetric model specialization will enable considerations of characters with many states.
 %There are (n-1) internal nodes in a tree, which increases by a factor of one with each additional leaf on the tree.  (This is scaled linearly).  We must sweep over all the possible parsimony lengths under that, which are equal to [1-(the number of leaves at that point)].  Therefore, at each child we will need to calculate for 0 and 1, whereas at the ancestor we will need to calculate for 0, 1, 2 and 3.  But as the tree becomes very large, the number of calculations / the number of length bins will be approximately of the order n.\\
 
 }
 \headerbox{Future Work}{name=results3,column=3,row=0}{
 \begin{compactitem}
-\item We will continue to optimize the algorithm for the symmetric model to reduce the memory and computational costs.
-\item We will test the specializations in software capable of using the general and specialized form of the algorithm.
+\item We will test the specializations of our symmetric in software capable of using the general and specialized form of the algorithm.
 \item After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package, which is a widely-used software tool for inferring evolutionary trees.  
 \item We will add calculation of goodness-of-fit statistics from the probabilities that our algorithms compute. 
-This will constitute an implementation of the method of Waddell {\em et al.~}\citep{WaddellOP2009} which can be used to assess model adequacy on large phylogenetic trees.
-Assessing models of character evolution on large trees provides a more rigorous test of model adequacy.
+This will feature the implementation method of Waddell {\em et al.~}\citep{WaddellOP2009} which can be used to assess model adequacy on large phylogenetic trees.
+(Assessing models of character evolution on large trees provides a more rigorous test of model adequacy).
 \end{compactitem}
-This work is being conducted according to the principles of open notebook science; all software, notes, and results are
+We are conducting this work according to the principles of open notebook science; all software, notes, and results are
 publicly viewable on \url{https://github.com/mtholder/PhyPatClassProb}
 }
 
