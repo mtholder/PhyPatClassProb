@@ -590,11 +590,11 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                         else {
                                             rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
                                         }
-//#                                       if defined DEBUGGING_OUTPUT2
+#                                       if defined DEBUGGING_OUTPUT2
 
                                         double jointNdProb = leftProb * rightProb;
                                         currNdProbVec[anc] += jointNdProb;
-//#                                       endif;
+#                                       endif;
 
                                     }
                                 }
