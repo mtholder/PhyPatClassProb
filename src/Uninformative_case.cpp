@@ -737,6 +737,9 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
 	cout << "blah\n";
 	std::vector<const NxsSimpleNode *> preorderVec = tree.GetPreorderTraversal();
 	std::map<const NxsSimpleNode *, NodeDataStructure *> node2dataMap;
+#	if defined DEBUGGING_OUTPUT
+		std::cerr << "blob.nStates = " << blob.nStates << '\n';
+#	endif
 	NodeDataStructure * currNdData = 0L;
 	try {
 		int ndInd = preorderVec.size() - 1;
@@ -937,6 +940,10 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                     }
                 }
             }
+#if defined DEBUGGING_OUTPUT
+        std::cerr << "EARLY EXIT!!!\n";
+        exit(1);
+#endif
         }
 	}
 	catch (...) {
