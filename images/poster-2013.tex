@@ -157,7 +157,7 @@ We plan to include the approaches in the GARLI software package for use in infer
 	\vskip -1.5em
 		\includegraphics[width=15em]{Log2RunTimeGraph}
 	\vskip -.5em
-	\caption{Computational time as a functions of number of tips in a tree.  
+	\caption{Computational time as a functions of number of tips in a tree.  Given a fixed tree with branch lengths and values for the parameters of the GTR (general time reversible) model, we can report the probabilities of pattern classes for nucleotide data.
 	%Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.
 	}\label{symmetryFig}
 \end{wrapfigure}
@@ -198,7 +198,7 @@ Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the pars
 %11-30 & 4 & 4.7 & 4.51\\
 \hline
 \end{tabular}
-\caption{Comparison to }\label{ComparisonToWaddell}.
+\caption{Comparison of the expected number of sites simulated by Waddell et al. to the expected number of sites calculated by our algorithm.  The closeness between the respective values shows our algorithm to be valid.}\label{ComparisonToWaddell}.
 
 \end{wrapfigure}
 
@@ -215,7 +215,7 @@ For a tree of $N$ leaves, the algorithm requires storing bins of probability for
 yielding an approximate memory requirement of $\mathcal{O}(N^2 k 2^{2k}$).
 $k$ is bounded and often small ($k=4$ for DNA data).
 With respect to tree size, calculations scale $\mathcal{O}(N^3).$
-Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on the tree shown in Figure \ref{waddellTreeFig} to obtain probabilities for classes of patterns.
+Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on a tree of mammals to obtain probabilities for classes of patterns.
 We validated our algorithm with the same data and confirmed very similar probability calculations (Figure \ref{ComparisonToWaddell}).  
 
 This data is also featured in our recently-published article in the PloS Currents Tree of Life online journal.
@@ -235,12 +235,13 @@ We can sketch out a rough computational complexity for a symmetric version of th
 We can focus on the size of these sets, since the exact nature of the state sets are not relevant here.  
 There are only $k$ distinct sizes (from $1$ to $k$) rather than $2^{k}-1$ state sets.
 This allows for drastic improvement and simplification in the algorithm.\\
-{\bf Figure \ref{symmetryFig}} shows a graph representing the calculations required for 
-a scenario in which an internal node has the down pass state set of $\{0\}$.
-Under a fully symmetric model, the state sets of the same size (e.g. $\{0,1\}$ and $\{0,2\}$) will imply the same probabilities.
-While there are 9 combinations of states sets, there are only 6 combinations of state set sizes.
-The time savings for this model expand for larger values of $k$.
-A symmetric model specialization will enable considerations of characters with many states.
+{\bf Figure \ref{ComparisonToWaddell}} is a comparison of the expected number of sites in varying pattern classes for a tree of 730-base RAG1 sequences from 40 species of mammals.  This shows the expected number of sites obtained from Waddell's simulations, compared to the calculations returned by our algorithm.  The pattern class probabilities were estimated by calculating the patterns' relative frequency based on 100,000 simulated sites.  The tree, model, and all data are identical to those used by Waddell et al.
+%shows a graph representing the calculations required for 
+%a scenario in which an internal node has the down pass state set of $\{0\}$.
+%Under a fully symmetric model, the state sets of the same size (e.g. $\{0,1\}$ and $\{0,2\}$) will imply the same probabilities.
+%While there are 9 combinations of states sets, there are only 6 combinations of state set sizes.
+%The time savings for this model expand for larger values of $k$.
+%A symmetric model specialization will enable considerations of characters with many states.
 %There are (n-1) internal nodes in a tree, which increases by a factor of one with each additional leaf on the tree.  (This is scaled linearly).  We must sweep over all the possible parsimony lengths under that, which are equal to [1-(the number of leaves at that point)].  Therefore, at each child we will need to calculate for 0 and 1, whereas at the ancestor we will need to calculate for 0, 1, 2 and 3.  But as the tree becomes very large, the number of calculations / the number of length bins will be approximately of the order n.\\
 
 }
