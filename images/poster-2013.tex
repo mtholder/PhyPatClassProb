@@ -126,9 +126,12 @@ We recently developed an algorithm that includes a general approach applicable t
 standard model of character evolution, which was published in a peer-reviewed journal article online.  
 We validated our data against Waddell's simulations, and performed run-time performance tests.
 Now, we are working to develop efficient, dynamic programming algorithms, which calculate the 
-probabilities of pattern classes in one pass down a phylogenetic tree.
-Focusing on parsimony-uninformative patterns, that is, optimizations for the fully symmetric
-models, we are now implementing these algorithms in open-source software written in C++.
+probabilities of a parsimony-uninformative pattern in one pass down a phylogenetic tree.
+Allman {\em et al.~}\cite{AllmanHR2010} showed that trees could be estimated from datasets that filtered to 
+contain only parsimony sites, if one can correct for the data filtering.
+This requires the calculation of the probability of generating a parsimony-uninformative
+pattern.
+We are now implementing these algorithms in open-source software written in C++.
 We plan to include the approaches in the GARLI software package for use in inferring evolutionary trees.
  \vskip 0.5em
 >>>>>>> 24c802e720ec70bc653132a11f2a8066b88a7dc3
@@ -137,7 +140,7 @@ We plan to include the approaches in the GARLI software package for use in infer
 
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
 \begin{compactenum}
-\item Develop specialized algorithms for fully symmetric models in which all states are equivalent.
+\item Develop specialized algorithms for calculating the probability of a parsimony-uninformative character.
  \vskip 1em
 \item Implement the algorithms into testing software in C++
  \vskip 1em
@@ -145,7 +148,7 @@ We plan to include the approaches in the GARLI software package for use in infer
 (This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software).
  \vskip 0.5em
 \end{compactenum}
-}
+}i
 
 \headerbox{A General Algorithm for Classes Based on Parsimony Length}{name=results,span=2,column=1,row=0}{
 %\begin{wrapfigure}{r}{25em}
@@ -185,6 +188,9 @@ We validated our algorithm with the same data and confirmed very similar probabi
 \begin{wrapfigure}{r}{25em}
 \begin{tabular}{|cc|c|c|}
 \hline
+\# & \#  & Waddell's  & Our \\
+ steps & states & simulation &  algorithm\\
+\hline
 0 & 1 & 282 & 283.21\\
 1 & 2 & 110.1 & 109.00\\
 2 & 2 & 48.0 & 48.60\\
@@ -210,6 +216,7 @@ We validated our algorithm with the same data and confirmed very similar probabi
 %9 & 4 & 6.5 & 6.50\\
 %10 & 4 & 4.3 & 4.31\\
 %11-30 & 4 & 4.7 & 4.51\\
+\hline
 \end{tabular}
 \end{wrapfigure}
 
