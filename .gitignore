@@ -19,3 +19,4 @@ pattern_class_prob.out
 pattern_class_prob.pdf
 pattern_class_prob.toc
 pattern_class_prob.synctex.gz
+*.aux
