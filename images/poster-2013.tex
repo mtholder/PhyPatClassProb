@@ -107,10 +107,31 @@
 }
 
 \headerbox{Abstract}{name=intro,column=0,row=0}{
-A wide variety of evolutionary analyses are based upon the pairing of phylogenetic trees with models of how biological traits change during evolution. In some contexts, one needs to calculate the probability that any member of a class of patterns will arise on the tree. For example, the model adequacy approach of Waddell et al. (2009) requires calculating the probability of several classes of patterns. In order to extend Lewis's morphological models to deal with many data sets, calculating the probability of any parsimony-informative pattern arising is required (`parsimony' referring to the simplest explanation of the data, and `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
+A wide variety of evolutionary analyses are based upon the pairing of phylogenetic trees
+with models of how biological traits change during evolution.
+In some contexts, one needs to calculate the probability that any member of a class of
+ patterns will arise on the tree.
+ For example, the model adequacy approach of Waddell et al. (2009) requires calculating 
+ the probability of several classes of patterns. 
+ In order to extend Lewis's morphological models to deal with many data sets, 
+ calculating the probability of any parsimony-informative pattern arising is required
+ (`parsimony' referring to the simplest explanation of the data, and 
+ `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
  \vskip 1em
+<<<<<<< HEAD
 We recently developed an algorithm that includes a general approach applicable to any standard model of character evolution, which was published in a peer-reviewed journal article online.  We validated our data against WaddellÕs simulations, and performed run-time checks to ensure accuracy.Now, we are working to develop efficient, dynamic programming algorithms, which calculate the probabilities of pattern classes in one pass down a phylogenetic tree.  Focusing on parsimony-uninformative patterns, that is, optimizations for the fully symmetric models, we are now implementing these algorithms in open-source software written in C++ and plan to include the approaches in the GARLI software package for use in inferring evolutionary trees.
  \vskip 1em
+=======
+We recently developed an algorithm that includes a general approach applicable to any 
+standard model of character evolution, which was published in a peer-reviewed journal article online.  
+We validated our data against Waddell's simulations, and performed run-time performance tests.
+Now, we are working to develop efficient, dynamic programming algorithms, which calculate the 
+probabilities of pattern classes in one pass down a phylogenetic tree.
+Focusing on parsimony-uninformative patterns, that is, optimizations for the fully symmetric
+models, we are now implementing these algorithms in open-source software written in C++.
+We plan to include the approaches in the GARLI software package for use in inferring evolutionary trees.
+ \vskip 0.5em
+>>>>>>> 24c802e720ec70bc653132a11f2a8066b88a7dc3
 %
 }
 
@@ -127,12 +148,18 @@ A wide variety of evolutionary analyses are based upon the pairing of phylogenet
 }
 
 \headerbox{A General Algorithm for Classes Based on Parsimony Length}{name=results,span=2,column=1,row=0}{
-\begin{wrapfigure}{r}{25em}
+%\begin{wrapfigure}{r}{25em}
+%	\vskip -1.5em
+%		\includegraphics[width=25em]{waddellTree}
+%	\vskip -.5em
+%		\caption{Gene tree for RAG-1 sequences used by Waddell {\em et al.~}\citep{WaddellOP2009}. Branch lengths are shown in proportion to the expected number of changes per site. Our algorithm can calculate quantities such as ``the probability of a character evolving on this tree and showing states A and C and a parsimony length of 5''}\label{waddellTreeFig}
+%	\vskip -1.0em
+%\end{wrapfigure}
+\begin{wrapfigure}{r}{15em}
 	\vskip -1.5em
-		\includegraphics[width=25em]{waddellTree}
+		\includegraphics[width=15em]{Log2RunTimeGraph}
 	\vskip -.5em
-		\caption{Gene tree for RAG-1 sequences used by Waddell {\em et al.~}\citep{WaddellOP2009}. Branch lengths are shown in proportion to the expected number of changes per site. Our algorithm can calculate quantities such as ``the probability of a character evolving on this tree and showing states A and C and a parsimony length of 5''}\label{waddellTreeFig}
-	\vskip -1.0em
+	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 \end{wrapfigure}
 The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
 
@@ -186,15 +213,6 @@ We validated our algorithm with the same data and confirmed very similar probabi
 \end{tabular}
 \end{wrapfigure}
 
-
-%INPUT TABLE PDF
-%This figure represents a phylogenetic tree which uses this data to perform pairwise tests.  
-\begin{wrapfigure}{r}{15em}
-	\vskip -1.5em
-		\includegraphics[width=15em]{Log2RunTimeGraph}
-	\vskip -.5em
-	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
-\end{wrapfigure}
 
 }
 \headerbox{Specializing for the Symmetric Models}{name=results2,span=2,column=1,below=results}{
