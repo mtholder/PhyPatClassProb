@@ -118,12 +118,6 @@ In some contexts, one needs to calculate the probability that any member of a cl
  (`parsimony' referring to the simplest explanation of the data, and 
  `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
  \vskip 1em
-<<<<<<< HEAD
-
-We recently developed an algorithm that includes a general approach applicable to any standard model of character evolution, which was published in a peer-reviewed journal article online.  We validated our data against WaddellÕs simulations, and performed run-time checks to ensure accuracy.
-Now, we are working to develop efficient, dynamic programming algorithms, which calculate the probabilities of pattern classes in one pass down a phylogenetic tree.  Focusing on parsimony-uninformative patterns, that is, optimizations for the fully symmetric models, we are now implementing these algorithms in open-source software written in C++ and plan to include the approaches in the GARLI software package for use in inferring evolutionary trees.
- \vskip 1em
-=======
 We recently developed an algorithm that includes a general approach applicable to any 
 standard model of character evolution, which was published in a peer-reviewed journal article online.  
 We validated our data against Waddell's simulations, and performed run-time performance tests.
@@ -166,7 +160,6 @@ We plan to include the approaches in the GARLI software package for use in infer
 	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 \end{wrapfigure}
 The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
-
 The model adequacy test also requires partitioning patterns based on the set of states observed at the leaves of the tree.
 Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the parsimony score.
 
