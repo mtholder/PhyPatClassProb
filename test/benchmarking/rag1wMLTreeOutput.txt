@@ -1,0 +1,71 @@
+argc = 6
+argv[0] = ../../src/PhyPatClassProb
+argv[1] = -f0.252818,0.284001,0.256973
+argc = 6
+argv[0] = ../../src/PhyPatClassProb
+argv[1] = -f0.252818,0.284001,0.256973
+Expected steps = 0 states = A prob = 0.158236
+Expected steps = 0 states = C prob = 0.175436
+Expected steps = 0 states = G prob = 0.166815
+Expected steps = 0 states = T prob = 0.122403
+Expected steps = 1 states = AC prob = 0.0286833
+Expected steps = 1 states = AG prob = 0.0800378
+Expected steps = 1 states = CG prob = 0.0168624
+Expected steps = 1 states = AT prob = 0.00836676
+Expected steps = 1 states = CT prob = 0.0820713
+Expected steps = 1 states = GT prob = 0.0115697
+Expected steps = 2 states = AC prob = 0.00271357
+Expected steps = 2 states = AG prob = 0.021337
+Expected steps = 2 states = CG prob = 0.000957893
+Expected steps = 2 states = ACG prob = 0.0182575
+Expected steps = 2 states = AT prob = 0.000312365
+Expected steps = 2 states = CT prob = 0.0260443
+Expected steps = 2 states = ACT prob = 0.0151566
+Expected steps = 2 states = GT prob = 0.000525471
+Expected steps = 2 states = AGT prob = 0.00805528
+Expected steps = 2 states = CGT prob = 0.0120135
+Expected steps = 3 states = AC prob = 0.00014839
+Expected steps = 3 states = AG prob = 0.00317657
+Expected steps = 3 states = CG prob = 3.29939e-05
+Expected steps = 3 states = ACG prob = 0.00701476
+Expected steps = 3 states = AT prob = 7.56329e-06
+Expected steps = 3 states = CT prob = 0.00466941
+Expected steps = 3 states = ACT prob = 0.00636607
+Expected steps = 3 states = GT prob = 1.42789e-05
+Expected steps = 3 states = AGT prob = 0.00272849
+Expected steps = 3 states = CGT prob = 0.0047589
+Expected steps = 3 states = ACGT prob = 0.00743524
+Expected steps = 4 states = AC prob = 2.08973e-06
+Expected steps = 4 states = AG prob = 0.000109527
+Expected steps = 4 states = CG prob = 3.03725e-07
+Expected steps = 4 states = ACG prob = 0.00109689
+Expected steps = 4 states = AT prob = 5.17797e-08
+Expected steps = 4 states = CT prob = 0.000191581
+Expected steps = 4 states = ACT prob = 0.0010697
+Expected steps = 4 states = GT prob = 1.04899e-07
+Expected steps = 4 states = AGT prob = 0.000369271
+Expected steps = 4 states = CGT prob = 0.000767512
+Expected steps = 4 states = ACGT prob = 0.00365361
+Expected steps = 5 states = AC prob = 0
+Expected steps = 5 states = AG prob = 0
+Expected steps = 5 states = CG prob = 0
+Expected steps = 5 states = ACG prob = 2.95294e-05
+Expected steps = 5 states = AT prob = 0
+Expected steps = 5 states = CT prob = 0
+Expected steps = 5 states = ACT prob = 2.52324e-05
+Expected steps = 5 states = GT prob = 0
+Expected steps = 5 states = AGT prob = 5.80303e-06
+Expected steps = 5 states = CGT prob = 1.5276e-05
+Expected steps = 5 states = ACGT prob = 0.000452987
+Expected steps = 6 states = AC prob = 0
+Expected steps = 6 states = AG prob = 0
+Expected steps = 6 states = CG prob = 0
+Expected steps = 6 states = ACG prob = 0
+Expected steps = 6 states = AT prob = 0
+Expected steps = 6 states = CT prob = 0
+Expected steps = 6 states = ACT prob = 0
+Expected steps = 6 states = GT prob = 0
+Expected steps = 6 states = AGT prob = 0
+Expected steps = 6 states = CGT prob = 0
+Expected steps = 6 states = ACGT prob = 2.96725e-06
+totalprob = 1

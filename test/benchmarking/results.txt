@@ -1,0 +1,91 @@
+$ sh run_test.sh 
+pectinate3
+
+real	0m0.020s
+user	0m0.011s
+sys	0m0.008s
+symm3
+
+real	0m0.019s
+user	0m0.011s
+sys	0m0.007s
+pectinate4
+
+real	0m0.026s
+user	0m0.017s
+sys	0m0.008s
+symm4
+
+real	0m0.041s
+user	0m0.032s
+sys	0m0.007s
+pectinate5
+
+real	0m0.060s
+user	0m0.050s
+sys	0m0.008s
+symm5
+
+real	0m0.185s
+user	0m0.176s
+sys	0m0.009s
+pectinate6
+
+real	0m0.200s
+user	0m0.189s
+sys	0m0.011s
+symm6
+
+real	0m1.081s
+user	0m1.069s
+sys	0m0.010s
+pectinate7
+
+real	0m0.783s
+user	0m0.761s
+sys	0m0.020s
+symm7
+
+real	0m4.824s
+user	0m4.809s
+sys	0m0.012s
+pectinate8
+
+real	0m3.329s
+user	0m3.236s
+sys	0m0.090s
+symm8
+
+real	0m20.182s
+user	0m20.154s
+sys	0m0.024s
+pectinate9
+
+real	0m16.591s
+user	0m16.157s
+sys	0m0.430s
+symm9
+
+real	1m52.705s
+user	1m52.627s
+sys	0m0.073s
+pectinate10
+
+real	1m14.402s
+user	1m12.732s
+sys	0m1.664s
+symm10
+
+real	12m6.599s
+user	12m6.286s
+sys	0m0.287s
+pectinate11
+
+real	4m52.647s
+user	4m46.362s
+sys	0m6.270s
+symm11
+
+real	54m36.603s
+user	54m34.848s
+sys	0m1.583s

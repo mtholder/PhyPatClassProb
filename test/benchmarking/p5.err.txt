@@ -1,0 +1,86 @@
+Reading ./p5.nex
+storing implied block: TAXA
+storing read block: DATA
+storing read block: TREES
+Model state_freqs = ( 0.252818 0.284001 0.256973 0.206208)
+Model rel_rates = (( 1.86149 5.25704 0.7204) ( 0.97137 6.83511) ( 1) () )
+Model rate_multiplier_category0 = (rate=0, prob=0.23193)
+Model rate_multiplier_category1 = (rate=0.129385, prob=0.0960088)
+Model rate_multiplier_category2 = (rate=0.34865, prob=0.0960088)
+Model rate_multiplier_category3 = (rate=0.575176, prob=0.0960088)
+Model rate_multiplier_category4 = (rate=0.83185, prob=0.0960088)
+Model rate_multiplier_category5 = (rate=1.14122, prob=0.0960088)
+Model rate_multiplier_category6 = (rate=1.54444, prob=0.0960088)
+Model rate_multiplier_category7 = (rate=2.14857, prob=0.0960088)
+Model rate_multiplier_category8 = (rate=3.69642, prob=0.0960088)
+Model_arg -f0.252818,0.284001,0.256973,0.206208
+Model_arg -r1.86149,5.25704,0.7204,0.97137,6.83511,1
+Model_arg -m0,0.129385,0.34865,0.575176,0.83185,1.14122,1.54444,2.14857,3.69642
+Model_arg -p0.23193,0.0960088,0.0960088,0.0960088,0.0960088,0.0960088,0.0960088,0.0960088,0.0960088
+Model not fully symmetric (not an Mk model)
+[PAUP] begin paup;    lset nst = 6 BaseFreq = ( 0.252818 0.284001 0.256973) rMat = ( 1.86149 5.25704 0.7204 0.97137 6.83511);  end;
+from line 1716:
+taxon 1:
+ 1
+taxon 2:
+ 1
+taxon 3:
+ 1
+taxon 4:
+ 1
+taxon 5:
+ 1
+taxon 6:
+ 1
+taxon 7:
+ 1
+taxon 8:
+ 1
+taxon 9:
+ 1
+taxon 10:
+ 1
+taxon 11:
+ 1
+taxon 12:
+ 1
+taxon 13:
+ 1
+taxon 14:
+ 1
+taxon 15:
+ 1
+taxon 16:
+ 1
+taxon 17:
+ 1
+taxon 18:
+ 1
+taxon 19:
+ 1
+taxon 20:
+ 1
+taxon 21:
+ 1
+taxon 22:
+ 1
+taxon 23:
+ 1
+taxon 24:
+ 1
+taxon 25:
+ 1
+taxon 26:
+ 1
+taxon 27:
+ 1
+taxon 28:
+ 1
+taxon 29:
+ 1
+taxon 30:
+ 1
+taxon 31:
+ 1
+taxon 32:
+ 1
