@@ -136,11 +136,11 @@ We plan to include the approaches in the GARLI software package for use in infer
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
 \begin{compactenum}
 \item Develop specialized algorithms for calculating the probability of a parsimony-uninformative character.
- \vskip 1em
+ \vskip .5em
 \item Implement the algorithms into testing software in C++
- \vskip 1em
+ \vskip .5em
 \item Add the algorithms to GARLI for use in phylogenetic inference
-(This will involve identifiying several tricks.  Recognizing these symmetric cases will simplify the code, causing it to run more efficiently and accurately in the C++ open source software).
+(Recognizing these symmetric cases will make the code run more efficiently and accurately in C++).
  \vskip 0.5em
 \end{compactenum}
 }i
@@ -198,8 +198,7 @@ Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the pars
 %11-30 & 4 & 4.7 & 4.51\\
 \hline
 \end{tabular}
-\caption{Comparison of the expected number of sites simulated by Waddell et al. to the expected number of sites calculated by our algorithm.  The closeness between the respective values shows our algorithm to be valid.}\label{ComparisonToWaddell}.
-
+\caption{Comparison of the expected number of sites simulated by Waddell et al. to the expected number of sites calculated by our algorithm.  The closeness between the respective values shows our algorithm to be valid.}\label{ComparisonToWaddell}.\vskip -4em
 \end{wrapfigure}
 
 The Fitch algorithm can calculate the parsimony length for a tree rooted at an internal node from a ``downpass state set'' for the children of the node.
@@ -218,7 +217,7 @@ With respect to tree size, calculations scale $\mathcal{O}(N^3).$
 Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on a tree of mammals to obtain probabilities for classes of patterns.
 We validated our algorithm with the same data and confirmed very similar probability calculations (Figure \ref{ComparisonToWaddell}).  
 
-This data is also featured in our recently-published article in the PloS Currents Tree of Life online journal.
+This data is also featured in our recently-published article in the PloS Currents Tree of Life online journal\cite{KochH2012}.
 
 
 %}
@@ -229,7 +228,7 @@ This data is also featured in our recently-published article in the PloS Current
 %	\vskip -.5em
 %	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 %\end{wrapfigure}
-\vskip 2em \large \textbf{Specialization for parsimony-uninformative patterns}\normalsize\\
+\vskip 1em \large \textbf{Specialization for parsimony-uninformative patterns}\normalsize\\
 \vskip .5em
 For decades, the parsimony method was the dominant means of inferring phylogenies from
 morphological data. 
