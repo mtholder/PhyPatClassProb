@@ -157,7 +157,9 @@ We plan to include the approaches in the GARLI software package for use in infer
 	\vskip -1.5em
 		\includegraphics[width=15em]{Log2RunTimeGraph}
 	\vskip -.5em
-	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
+	\caption{Computational time as a functions of number of tips in a tree
+	%Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.
+	}\label{symmetryFig}
 \end{wrapfigure}
 The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
 
@@ -221,12 +223,12 @@ We validated our algorithm with the same data and confirmed very similar probabi
 
 }
 \headerbox{Specializing for the Symmetric Models}{name=results2,span=2,column=1,below=results}{
-\begin{wrapfigure}{r}{15em}
-	\vskip -1.5em
-		\includegraphics[width=15em]{downpass-symmetry-small}
-	\vskip -.5em
-	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
-\end{wrapfigure}
+%\begin{wrapfigure}{r}{15em}
+%	\vskip -1.5em
+%		\includegraphics[width=15em]{downpass-symmetry-small}
+%	\vskip -.5em
+%	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
+%\end{wrapfigure}
 We are in the last stages of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
 In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
 We can sketch out a rough computational complexity for a symmetric version of the algorithm.
