@@ -229,6 +229,17 @@ This data is also featured in our recently-published article in the PloS Current
 %	\vskip -.5em
 %	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 %\end{wrapfigure}
+\vskip 2em \large \textbf{Specialization for parsimony-uninformative patterns}\normalsize\\
+\vskip .5em
+For decades, the parsimony method was the dominant means of inferring phylogenies from
+morphological data. 
+Thus many datasets describing morphological traits of organisms will contain only patterns 
+which are parsimony-informative.
+Correcting for this filtering of data to only include parsimony informative patterns
+is crucial to reliable tree inference \cite{NylanderRHN2004,AllmanHR2010}.
+To correct the calculations, one must be able to calculate the probability of 
+generating a parsimony uninformative pattern.
+
 We are in the last stages of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
 In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
 We can sketch out a rough computational complexity for a symmetric version of the algorithm.
