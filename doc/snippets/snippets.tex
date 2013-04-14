@@ -1,0 +1,37 @@
+I_{s,t,d,a}(n) = \sum_{s_A=|d|-1}^{s + 1 -|d|}\left(\sum_{c_A\in Y(t-d)}\left[\sum_{g_A\in Y(c_A-d)} \left(\sum_{i\in S} Q_{s_A,t_A,d_A,i}(A_n) P(i|a,e(A_n))\right)C_{s-s_A,t\ast t_A}\right]\right)
+
+I_{s,t,d,a}(n) = \sum_{s_A}\sum_{c_A}\sum_{g_A} \left(\sum_{i\in S} Q_{s_A,t_A,d_A,i}(A_n) P(i|a,e(A_n))\right)C[s-s_A, t, c_A, d, g_A a]
+
+
+\left(\sum_{i\in S} Q_{s_A,t_A,d_A,i}(A_n) P(i|a,e[A(n)]\right)
+
+
+2 funcs:
+
+
+I_{s,t,d,a}(n) = \sum_{s_A}\sum_{c_A}\sum_{g_A} C\left[s_A,d+c_A, d+g_A, a, A(n)\right]O\left[s-s_A, t, c_A, d, g_A, a, B(n)\right]
+
+
+Child.png
+C\left[s_A, t_A, d_A, a, A(n)\right] = \sum_{i\in S} Q_{s_A,t_A,d_A,i}(A_n) P\left(i|a,e[A(n)]\right)
+
+Intersection.png
+I_{s,t,d,a}(n) = \sum_{s_A}\sum_{c_A\in Y(t-d)}\sum_{g_A\in Y(c_A)} C\left[s_A,d+c_A, d+g_A, a, A(n)\right]W\left[s-s_A, t, c_A, d, g_A, a, B(n)\right]
+
+
+OtherChild.png
+W\left[s_B, t, c_A, d, g_A, a, B(n)\right] = \sum_{c_B}\sum_{g_B}C\left[s_B,d+c_B, d+g_B, a, B(n)\right]
+
+
+Union.png
+U_{s,t,d,a}(n) = \sum_{s_A}\sum_{g_A\in Z(d)}\sum_{c_A\in Y(t-g_A)} C\left[s_A, g_A+c_A, g_A, a, A(n)\right]V\left[s-1-s_A, t, c_A, d, g_A, a, B(n)\right]
+
+
+OtherChildUnion.png
+V\left[s_B, t, c_A, d, g_A, a, B(n)\right] = \sum_{c_B}C\left[s_B,d+c_B, d-g_A, a, B(n)\right]
+
+
+Q_{s,t,d,a}(n) = I_{s,t,d,a}(n) + U_{s,t,d,a}(n)
+
+
+X_{s,t,d} = \sum_{a\in S}\pi_a Q_{s,t,d,a}(\rho)
