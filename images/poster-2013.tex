@@ -118,8 +118,8 @@ In some contexts, one needs to calculate the probability that any member of a cl
  (`parsimony' referring to the simplest explanation of the data, and 
  `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
  \vskip 1em
-We recently developed an algorithm that includes a general approach applicable to any 
-standard model of character evolution, which was published in a peer-reviewed journal article online.  
+We recently published an algorithm that includes a general approach applicable to any 
+standard model of character evolution \cite{KochH2012}.  
 We validated our data against Waddell's simulations, and performed run-time performance tests.
 Now, we are working to develop efficient, dynamic programming algorithms, which calculate the 
 probabilities of a parsimony-uninformative pattern in one pass down a phylogenetic tree.
@@ -162,9 +162,8 @@ We plan to include the approaches in the GARLI software package for use in infer
 	}\label{symmetryFig}
 \end{wrapfigure}
 The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
-
 The model adequacy test also requires partitioning patterns based on the set of states observed at the leaves of the tree.
-Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the parsimony score.
+%Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the parsimony score.
 \begin{wrapfigure}{l}{20em}
 \begin{tabular}{|cc|c|c|}
 \hline
@@ -198,26 +197,24 @@ Fitch \citep{Fitch1971} provided an efficient algorithm for calculating the pars
 %11-30 & 4 & 4.7 & 4.51\\
 \hline
 \end{tabular}
-\caption{Comparison of the expected number of sites simulated by Waddell et al. to the expected number of sites calculated by our algorithm.  The closeness between the respective values shows our algorithm to be valid.}\label{ComparisonToWaddell}.\vskip -4em
+\caption{Comparison of the expected number of sites simulated by Waddell et al. to the expected number of sites calculated by our algorithm.  The closeness between the respective values shows our algorithm to be valid.}\label{ComparisonToWaddell}
+\vskip 1.5em
 \end{wrapfigure}
-
-The Fitch algorithm can calculate the parsimony length for a tree rooted at an internal node from a ``downpass state set'' for the children of the node.
-We have developed a dynamic programming algorithm that can calculate the probability of classes of patterns that share the same set of observed states and parsimony length on a tree.\\
-For a tree of $N$ leaves, the algorithm requires storing bins of probability for:
+%The Fitch algorithm can calculate the parsimony length for a tree rooted at an internal node from a ``downpass state set'' for the children of the node.
+We have developed a dynamic programming algorithm that can calculate the probability of classes of patterns that share the same set of observed states and parsimony length on a tree. For a tree of $N$ leaves, the algorithm requires storing bins of probability for:
 \begin{compactitem}
 	\item each of the $N-1$ internal nodes,
 	\item each of the $\approx N - 1$ parsimony lengths,
 	\item each of the $k$ ancestral states,
 	\item  each of the $2^{k}-1$ observed state sets, and
-	\item each of the $2^{k}-1$ downpass state sets
+	\item each of the $2^{k}-1$ downpass state sets in Fitch's \cite{Fitch1971} algorithm.
 \end{compactitem}
 yielding an approximate memory requirement of $\mathcal{O}(N^2 k 2^{2k}$).
 $k$ is bounded and often small ($k=4$ for DNA data).
-With respect to tree size, calculations scale $\mathcal{O}(N^3).$
+With respect to tree size, calculations scale $\mathcal{O}(N^3)$ (see Figure \ref{Log2RunTimeGraph})
 Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on a tree of mammals to obtain probabilities for classes of patterns.
 We validated our algorithm with the same data and confirmed very similar probability calculations (Figure \ref{ComparisonToWaddell}).  
-
-This data is also featured in our recently-published article in the PloS Currents Tree of Life online journal\cite{KochH2012}.
+These results were presented in our recently published article in the PloS Currents Tree of Life online journal\cite{KochH2012}.
 
 
 %}
