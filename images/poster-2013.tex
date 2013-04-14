@@ -113,7 +113,7 @@ In some contexts, one needs to calculate the probability that any member of a cl
  patterns will arise on the tree.
  For example, the model adequacy approach of Waddell et al. (2009) requires calculating 
  the probability of several classes of patterns. 
- In order to extend Lewis's morphological models to deal with many data sets, 
+ In order to extend Lewis's (2001) morphological models to deal with many data sets, 
  calculating the probability of any parsimony-informative pattern arising is required
  (`parsimony' referring to the simplest explanation of the data, and 
  `parsimony-informative' referring to those patterns which affect phylogenetic estimation). 
@@ -159,7 +159,7 @@ We plan to include the approaches in the GARLI software package for use in infer
 	\vskip -.5em
 	\caption{Computational time as a functions of number of tips in a tree.  Given a fixed tree with branch lengths and values for the parameters of the GTR (general time reversible) model, we can report the probabilities of pattern classes for nucleotide data.
 	%Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.
-	}\label{symmetryFig}
+	}\label{Log2RunTimeGraph}
 \end{wrapfigure}
 The model adequacy assessment \citep{WaddellOP2009} and the extension of Lewis's \citep{Lewis2001} model both entail calculations based on classes of patterns that share the same parsimony length on a tree.
 The model adequacy test also requires partitioning patterns based on the set of states observed at the leaves of the tree.
@@ -236,13 +236,21 @@ is crucial to reliable tree inference \cite{NylanderRHN2004,AllmanHR2010}.
 To correct the calculations, one must be able to calculate the probability of 
 generating a parsimony uninformative pattern.
 
-We are in the last stages of developing a specialization of the algorithm for models in which all states are equivalent (such as \citep{Lewis2001}).
-In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
-We can sketch out a rough computational complexity for a symmetric version of the algorithm.
-We can focus on the size of these sets, since the exact nature of the state sets are not relevant here.  
-There are only $k$ distinct sizes (from $1$ to $k$) rather than $2^{k}-1$ state sets.
-This allows for drastic improvement and simplification in the algorithm.\\
-{\bf Figure \ref{ComparisonToWaddell}} is a comparison of the expected number of sites in varying pattern classes for a tree of 730-base RAG1 sequences from 40 species of mammals.  This shows the expected number of sites obtained from Waddell's simulations, compared to the calculations returned by our algorithm.  The pattern class probabilities were estimated by calculating the patterns' relative frequency based on 100,000 simulated sites.  The tree, model, and all data are identical to those used by Waddell et al.
+We are in the last stages of developing a specialization of the algorithm for calculating the class of parsimony uninformative patterns.
+By definition, a parsimony informative pattern will a length of $k-1$, thus we do not need to keep probabilities
+for an array of tree lengths.
+We can also ignore the $\mathcal{O}(2^{k}$) downpass states, in lieu of recording which of the $k$ states is repeated in the tree (there can only be one repeated state in a parsimony-uninformative site). 
+Thus the specialization should have memory requirements that scale as $\mathcal{O}(N k^2 2^{k}$).
+
+The need to consider multiple parsimony lengths as well as consider all possible ways of partitioning this length between the left and right subtrees are responsible for $\mathcal{O}(N^2)$ of the running time of the general algorithm.
+Thus, we expect the specialized form to run in an amount of time that is linear with the number of leaves in the tree.
+
+%In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
+%We can sketch out a rough computational complexity for a symmetric version of the algorithm.
+%We can focus on the size of these sets, since the exact nature of the state sets are not relevant here.  
+%There are only $k$ distinct sizes (from $1$ to $k$) rather than $2^{k}-1$ state sets.
+%This allows for drastic improvement and simplification in the algorithm.\\
+%{\bf Figure \ref{ComparisonToWaddell}} is a comparison of the expected number of sites in varying pattern classes for a tree of 730-base RAG1 sequences from 40 species of mammals.  This shows the expected number of sites obtained from Waddell's simulations, compared to the calculations returned by our algorithm.  The pattern class probabilities were estimated by calculating the patterns' relative frequency based on 100,000 simulated sites.  The tree, model, and all data are identical to those used by Waddell et al.
 %shows a graph representing the calculations required for 
 %a scenario in which an internal node has the down pass state set of $\{0\}$.
 %Under a fully symmetric model, the state sets of the same size (e.g. $\{0,1\}$ and $\{0,2\}$) will imply the same probabilities.
@@ -254,11 +262,11 @@ This allows for drastic improvement and simplification in the algorithm.\\
 }
 \headerbox{Future Work}{name=results3,column=3,row=0}{
 \begin{compactitem}
-\item We will test the specializations of our symmetric algorithm in software capable of using the general and specialized form of the algorithm.
+\item We will test the specializations of our algorithm for uninformative patterns in software capable of using the general models and models in which all states are interchangeable.
  \vskip 0.5em
 \item After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package, which is a widely-used software tool for inferring evolutionary trees.  
  \vskip 0.5em
-\item We will add calculation of goodness-of-fit statistics from the probabilities that our algorithms compute. 
+\item We will add calculation of goodness-of-fit statistics for model testing. 
 \end{compactitem}
  \vskip 0.5em
 We are conducting this work according to the principles of open notebook science; all software, notes, and results are
