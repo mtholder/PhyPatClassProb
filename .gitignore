@@ -20,3 +20,6 @@ pattern_class_prob.pdf
 pattern_class_prob.toc
 pattern_class_prob.synctex.gz
 *.aux
+*.bbl
+*.blg
+*.o
