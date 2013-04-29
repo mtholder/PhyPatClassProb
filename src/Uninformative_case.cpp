@@ -878,7 +878,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                 rightCommSt = common;
                                 vector<int> obsStSetsWithComm = subsetsContainingGivenState(obsStSet, commonBits); //prob for both
 #                               if defined DEBUGGING_OUTPUT
-                                    std::cerr << "leftCommSt, rightCommSt" << leftCommSt << ',' << rightCommSt << '\n';
+                                    std::cerr << "leftCommSt, rightCommSt " << leftCommSt << ',' << rightCommSt << '\n';
                                     std::cerr << "obsStSetsWithComm.size() = " << obsStSetsWithComm.size() << '\n';
 #                               endif
                                 for(int j = 0; j < obsStSetsWithComm.size(); j++) {
