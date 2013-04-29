@@ -624,6 +624,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                             rightProb = calcProbOfSubtreeForObsStSetNoRepeated(rightNodeData, anc, rightObsStSet, rightEdgeLen, blob);
                                         }
 #                                       if defined DEBUGGING_OUTPUT2
+                                            std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " leftProb = "<< leftProb << "rightProb = " << rightProb "\n";
 #                                       endif;
                                         double jointNdProb = leftProb * rightProb;
                                         currNdProbVec[anc] += jointNdProb;
@@ -638,6 +639,9 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                 int leftCommSt, rightCommSt;
                                 leftCommSt = common;
                                 rightCommSt = common;
+                                #if defined DEBUGGING_OUTPUT2
+                                    std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " leftCommSt = "<< common << "rightCommSt = " << common << "\n";
+                                #endif
                                 vector<int> obsStSetsWithComm = subsetsContainingGivenState(obsStSet, commonBits); //prob for both
                                 for(int j = 0; j < obsStSetsWithComm.size(); j++) {
                                         int leftObsStSet = obsStSetsWithComm[j];
@@ -866,7 +870,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                             int commonBits = convertIndexToBit(common);
 #                           if defined DEBUGGING_OUTPUT
                                 std::cerr << "commonBits = " << commonBits << '\n';
-#                           endif                            
+#                           endif
                             for(int anc = 0; anc < blob.nStates; anc++) {
                                 currNdProbVec[anc] = 0.0;
                                 int leftCommSt, rightCommSt;

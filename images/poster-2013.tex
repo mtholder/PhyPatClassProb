@@ -136,9 +136,9 @@ We plan to include the approaches in the GARLI software package for use in infer
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
 \begin{compactenum}
 \item Develop specialized algorithms for calculating the probability of a parsimony-uninformative character.
- \vskip .5em
+ \vskip .67em
 \item Implement the algorithms into testing software in C++
- \vskip .5em
+ \vskip .67em
 \item Add the algorithms to GARLI for use in phylogenetic inference
 (Recognizing these symmetric cases will make the code run more efficiently and accurately in C++).
  \vskip 0.5em
@@ -157,7 +157,7 @@ We plan to include the approaches in the GARLI software package for use in infer
 	\vskip -1.5em
 		\includegraphics[width=15em]{Log2RunTimeGraph}
 	\vskip -.5em
-	\caption{Computational time as a functions of number of tips in a tree.  Given a fixed tree with branch lengths and values for the parameters of the GTR (general time reversible) model, we can report the probabilities of pattern classes for nucleotide data.
+	\caption{Computational time as a function of number of tips in a tree.  Given a fixed tree with branch lengths and values for the parameters of the GTR (general time reversible) model, we can report the probabilities of pattern classes for nucleotide data.
 	%Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.
 	}\label{Log2RunTimeGraph}
 \end{wrapfigure}
@@ -263,12 +263,12 @@ Thus, we expect the specialized form to run in an amount of time that is linear 
 \headerbox{Future Work}{name=results3,column=3,row=0}{
 \begin{compactitem}
 \item We will test the specializations of our algorithm for uninformative patterns in software capable of using the general models and models in which all states are interchangeable.
- \vskip 0.5em
+ \vskip 0.16 em
 \item After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package, which is a widely-used software tool for inferring evolutionary trees.  
- \vskip 0.5em
+ \vskip 0.16 em
 \item We will add calculation of goodness-of-fit statistics for model testing. 
 \end{compactitem}
- \vskip 0.5em
+ \vskip 0.16em
 We are conducting this work according to the principles of open notebook science; all software, notes, and results are
 publicly viewable on \url{https://github.com/mtholder/PhyPatClassProb}
 }
