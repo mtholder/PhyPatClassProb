@@ -544,6 +544,8 @@ double calcProbOfSubtreeForObsStSetAndComm(NodeDataStructure * subtreeData,
     double p = 0.0;
     ProbForObsStateSet & childProbSet = subtreeData->getForObsStateSet(obsBits);
 #   if defined DEBUGGING_OUTPUT
+         std::cerr << "line " << __LINE__ << " calcProbOfSubtreeForObsStSetAndComm("
+                    << subtreeData << ", " << ancIndex << ", " << obsBits << ", " << commonStates  << ", " << edgeLen  << ", blob)...\n";
         childProbSet.writeDebug(std::cerr, blob);
 #   endif
     std::vector<double> & childProb = childProbSet.getProbForCommState(commonStates);
@@ -551,10 +553,10 @@ double calcProbOfSubtreeForObsStSetAndComm(NodeDataStructure * subtreeData,
         double transProb = calculateTransProb(ancIndex, i, edgeLen, blob); //includes lib so Mark will write this func
         double partialLike = childProb[i];
         double x = transProb * partialLike;
-#       if defined DEBUGGING_OUTPUT
-            std::cerr << __LINE__ << " transProb = " << transProb << "    partialLike = " << partialLike << "\n";
-#       endif
         p += x; // this loop is how we sum
+#       if defined DEBUGGING_OUTPUT
+            std::cerr << __LINE__ << " transProb = " << transProb << "    childpartialLike = " << partialLike << " ancProbForTransition = " << x << " p = " << p <<"\n";
+#       endif
     }
     return p;
 }
@@ -573,6 +575,10 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                                      std::ostream & out,
                                                      const CommonInfo & blob) {
     stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
+#   if defined DEBUGGING_OUTPUT
+        std::cerr << "from line " << __LINE__ << " summarizeUninformativePatternClassProbabilities:  " ;
+        rootData->writeDebug(std::cerr, blob);
+#   endif
     for(; ssCit!=blob.stateSetEnd(); ++ssCit){
         const int & obsStSet = *ssCit; //'dereferencing' it
         int common = -1;
@@ -920,14 +926,18 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                         double jointNdProb = leftProb * rightProb;
                                         currNdProbVec[anc] += jointNdProb;
                                         //Now consider when the left is not displayed by commonBits as observed States
-                                        leftObsStSet = obsStSet - rightObsStSet;
-                                        if(leftObsStSet != 0) {
-                                            leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
-                                            jointNdProb = leftProb * rightProb;
 #                                       if defined DEBUGGING_OUTPUT
                                             std::cerr << "leftProb " << leftProb << '\n';
                                             std::cerr << "rightProb " << rightProb << '\n';
 #                                       endif
+                                        leftObsStSet = obsStSet - rightObsStSet;
+                                        if(leftObsStSet != 0) {
+                                            leftProb = calcProbOfSubtreeForObsStSetAndComm(leftNodeData, anc, leftObsStSet, -1, leftEdgeLen, blob);
+                                            jointNdProb = leftProb * rightProb;
+#                                           if defined DEBUGGING_OUTPUT
+                                                std::cerr << "leftProb " << leftProb << '\n';
+                                                std::cerr << "rightProb " << rightProb << '\n';
+#                                           endif
                                             currNdProbVec[anc] += jointNdProb;
                                         }
                                     }
@@ -952,14 +962,18 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                                         double jointNdProb = leftProb * rightProb;
                                         currNdProbVec[anc] += jointNdProb;
                                         //Now consider when the right is not displayed by commonBits as observed States
+#                                           if defined DEBUGGING_OUTPUT
+                                                std::cerr << "leftProb " << leftProb << '\n';
+                                                std::cerr << "rightProb " << rightProb << '\n';
+#                                           endif
                                         rightObsStSet = obsStSet - leftObsStSet;
                                         if(rightObsStSet != 0) {
                                             rightProb = calcProbOfSubtreeForObsStSetAndComm(rightNodeData, anc, rightObsStSet, -1, rightEdgeLen, blob);
                                             jointNdProb = leftProb * rightProb;
-#                                       if defined DEBUGGING_OUTPUT
-                                            std::cerr << "leftProb " << leftProb << '\n';
-                                            std::cerr << "rightProb " << rightProb << '\n';
-#                                       endif
+#                                           if defined DEBUGGING_OUTPUT
+                                                std::cerr << "leftProb " << leftProb << '\n';
+                                                std::cerr << "rightProb " << rightProb << '\n';
+#                                           endif
                                             currNdProbVec[anc] += jointNdProb;
                                         }
                                     }
