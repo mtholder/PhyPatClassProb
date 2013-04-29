@@ -510,9 +510,9 @@ class NodeDataStructure{ //data members
         }
 
         void writeDebug(std::ostream & o, const CommonInfo & blob) const {
-            o << "NodeDataStructure{ numLeaves = " << this->numLeaves << "\norobVec: ";
+            o << "NodeDataStructure@" << (long) this << "{ numLeaves = " << this->numLeaves << "\nprobVec: ";
             for (unsigned i = 0; i < probVec.size() ; ++i) {
-                o << i << ' ';
+                o << "obstStateSet =" << i << ' ';
                 const ProbForObsStateSet & pfoss = probVec[i];
                 pfoss.writeDebug(o, blob);
                 o << '\n';
@@ -827,7 +827,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
 #                   endif
                     while(common>-2) /* or for(;;)*/ { // loop over common
                         ProbForObsStateSet & currNdProbSet = currNdData->getForObsStateSet(obsStSet);
-                        std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+                        std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(common);
 #                       if defined DEBUGGING_OUTPUT
                                 std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
 #                       endif
