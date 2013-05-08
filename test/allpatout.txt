@@ -1,0 +1,51 @@
+argc = 4
+argv[0] = src/UninformProb
+argv[1] = -f.25,0.25,0.25
+blah
+Prob(obs state set = 1 , no repeated states) = 0
+Prob(obs state set = 1 , 0 ) = 0.208248
+Prob(obs state set = 2 , no repeated states) = 0
+Prob(obs state set = 2 , 1 ) = 0.208248
+Prob(obs state set = 3 , no repeated states) = 0
+Prob(obs state set = 3 , 0 ) = 0.0124948
+Prob(obs state set = 3 , 1 ) = 0.0124948
+Prob(obs state set = 4 , no repeated states) = 0
+Prob(obs state set = 4 , 2 ) = 0.208248
+Prob(obs state set = 5 , no repeated states) = 0
+Prob(obs state set = 5 , 0 ) = 0.0124948
+Prob(obs state set = 5 , 2 ) = 0.0124948
+Prob(obs state set = 6 , no repeated states) = 0
+Prob(obs state set = 6 , 1 ) = 0.0124948
+Prob(obs state set = 6 , 2 ) = 0.0124948
+Prob(obs state set = 7 , no repeated states) = 0
+Prob(obs state set = 7 , 0 ) = 0.000512126
+Prob(obs state set = 7 , 1 ) = 0.000512126
+Prob(obs state set = 7 , 2 ) = 0.000512126
+Prob(obs state set = 8 , no repeated states) = 0
+Prob(obs state set = 8 , 3 ) = 0.208248
+Prob(obs state set = 9 , no repeated states) = 0
+Prob(obs state set = 9 , 0 ) = 0.0124948
+Prob(obs state set = 9 , 3 ) = 0.0124948
+Prob(obs state set = 10 , no repeated states) = 0
+Prob(obs state set = 10 , 1 ) = 0.0124948
+Prob(obs state set = 10 , 3 ) = 0.0124948
+Prob(obs state set = 11 , no repeated states) = 0
+Prob(obs state set = 11 , 0 ) = 0.000512126
+Prob(obs state set = 11 , 1 ) = 0.000512126
+Prob(obs state set = 11 , 3 ) = 0.000512126
+Prob(obs state set = 12 , no repeated states) = 0
+Prob(obs state set = 12 , 2 ) = 0.0124948
+Prob(obs state set = 12 , 3 ) = 0.0124948
+Prob(obs state set = 13 , no repeated states) = 0
+Prob(obs state set = 13 , 0 ) = 0.000512126
+Prob(obs state set = 13 , 2 ) = 0.000512126
+Prob(obs state set = 13 , 3 ) = 0.000512126
+Prob(obs state set = 14 , no repeated states) = 0
+Prob(obs state set = 14 , 1 ) = 0.000512126
+Prob(obs state set = 14 , 2 ) = 0.000512126
+Prob(obs state set = 14 , 3 ) = 0.000512126
+Prob(obs state set = 15 , no repeated states) = 3.04733e-05
+Prob(obs state set = 15 , 0 ) = 0
+Prob(obs state set = 15 , 1 ) = 0
+Prob(obs state set = 15 , 2 ) = 0
+Prob(obs state set = 15 , 3 ) = 0

@@ -570,6 +570,17 @@ double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
     return calcProbOfSubtreeForObsStSetAndComm(subtreeData, ancIndex, obsBits, -1, edgeLen, blob);
 }
 
+void addCategProbs(const std::vector<double> & v, int n){
+    double sum = 0;
+    for(int i = 0; i < n; i++){
+        sum += v[i];
+        }
+    sum-=1.0;
+    if(fabs(sum) > 1e-6){
+        cout << "error" << '\n';
+        exit(1);
+        }
+}
 
 void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootData,
                                                      std::ostream & out,
@@ -579,6 +590,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
         std::cerr << "from line " << __LINE__ << " summarizeUninformativePatternClassProbabilities:  " ;
         rootData->writeDebug(std::cerr, blob);
 #   endif
+    addCategProbs(blob.categStateProb, blob.nStates);
     for(; ssCit!=blob.stateSetEnd(); ++ssCit){
         const int & obsStSet = *ssCit; //'dereferencing' it
         int common = -1;
@@ -588,21 +600,26 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
 #       endif
         while(common>-2) /* or for(;;)*/ { // loop over common
             ProbForObsStateSet & currNdProbSet = rootData->getForObsStateSet(obsStSet);
-            std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(-1);
+            std::vector<double> & currNdProbVec = currNdProbSet.getProbForCommState(common);
 #           if defined DEBUGGING_OUTPUT2
                 std::cerr << "from line " << __LINE__ << ":  " ; std::cerr << " common = "<< common << "\n";
 #           endif
-            if(common == -1) { //no comm state
-                if(rootData->getNumLeaves()==numObsSt) {
-                    double p = 0.0;
-                    for(int anc = 0; anc < blob.nStates; anc++) {
-                        p += currNdProbVec[anc];
-                    }
+            if(true   || common == -1) { //no comm state
+                double p = 0.0;
+                for(int anc = 0; anc < blob.nStates; anc++) {
+                    p += blob.categStateProb[anc] * currNdProbVec[anc];
+                }
+                if(common == -1) {
                     out << "Prob(obs state set = " << obsStSet << " , no repeated states) = " << p << std::endl;
+                }
+                else{
+                    out << "Prob(obs state set = " << obsStSet << " , " << common<< " ) = " << p << std::endl;
                 }
             }
             common = getNextCommStSet(obsStSet, common);
-
+#           if defined DEBUGGING_OUTPUT2
+                std::cerr << "from line " << __LINE__ << ": " ; std::cerr << "commStSet = " << common << "\n";
+#           endif
         }
     }
 }
@@ -742,6 +759,7 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
     catch (...) {
         throw;
     }
+
     //std::vector<const NxsSimplenode.....
     //
     //if(tipProbInfo = constant)
