@@ -43,6 +43,7 @@ end;
 begin paup;
     set storebrlens;
     log start replace;
+    CStatus full ;
 end;
 begin trees;
     tree mine = [&U] ''' + treestr + ''';

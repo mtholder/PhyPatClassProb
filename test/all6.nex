@@ -14,6 +14,7 @@ end;
 begin paup;
     set storebrlens;
     log start replace;
+    CStatus full ;
 end;
 begin trees;
     tree mine = [&U] (s1:0.02,(s2:0.02,(s3:0.02,(s4:0.02,(s5:0.02,s6:0.02):0.02):0.02):0.02):0.02);
