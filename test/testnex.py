@@ -15,7 +15,7 @@ def add_next(col_list,levels,stream_list):
             write_column(c,stream_list)
 from cStringIO import StringIO
 stream_list=[]
-ns = 5
+ns = 6
 for i in range(ns):
     stream_list.append(StringIO())
 
@@ -42,6 +42,7 @@ print ''';
 end;
 begin paup;
     set storebrlens;
+    log start replace;
 end;
 begin trees;
     tree mine = [&U] ''' + treestr + ''';
