@@ -1,0 +1,26 @@
+import math
+import sys
+likeFile = sys.argv[1]
+logFile = sys.argv[2]
+likeFileO = open(likeFile, 'UC')
+logFileO = open(logFile, 'U')
+for line in likeFileO: 
+    print line,
+    if line.startswith('Tree	-lnL	Site	-lnL'): 
+        break
+Uninformative = []
+sum = 0.0
+logSum = 0.0
+for line in likeFileO: 
+    if line[0].isdigit(): 
+        break
+    x = line.split()
+    ind = -float(x[1])
+    like = math.exp(ind)
+    print like
+    sum += like
+    logSum += ind
+print sum
+print 1-sum
+print logSum
+
