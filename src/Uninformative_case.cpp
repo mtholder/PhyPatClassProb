@@ -561,6 +561,10 @@ double calcProbOfSubtreeForObsStSetAndComm(NodeDataStructure * subtreeData,
     return p;
 }
 
+const char * toStringX(int );
+
+
+
 
 double calcProbOfSubtreeForObsStSetNoRepeated(NodeDataStructure * subtreeData,
                              int ancIndex,
@@ -582,9 +586,33 @@ void addCategProbs(const std::vector<double> & v, int n){
         }
 }
 
+const char * stateCodeToString(int idx) {
+    static const char * sa[] = {
+        "",//0
+        "A",//1
+        "C",//2
+        "AC", //3
+        "G",//4
+        "AG",//5
+        "CG",//6
+        "ACG",//7
+        "T",//8
+        "AT",//9
+        "CT",//10
+        "ACT",//11
+        "GT",//12
+        "AGT",//13
+        "CGT",//14
+        "ACGT",//15
+        };
+    return sa[idx];
+    }
+
 void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootData,
                                                      std::ostream & out,
                                                      const CommonInfo & blob) {
+
+    const char * statelist = "ACGT";
     stateSetContainer::const_iterator ssCit = blob.stateSetBegin();
 #   if defined DEBUGGING_OUTPUT
         std::cerr << "from line " << __LINE__ << " summarizeUninformativePatternClassProbabilities:  " ;
@@ -610,10 +638,10 @@ void summarizeUninformativePatternClassProbabilities(NodeDataStructure * rootDat
                     p += blob.categStateProb[anc] * currNdProbVec[anc];
                 }
                 if(common == -1) {
-                    out << "Prob(obs state set = " << obsStSet << " , no repeated states) = " << p << std::endl;
+                    out << "Prob(obs state set = " << obsStSet << "  " << stateCodeToString(obsStSet) << " , no repeated states) = " << p << std::endl;
                 }
                 else{
-                    out << "Prob(obs state set = " << obsStSet << " , " << common<< " ) = " << p << std::endl;
+                    out << "Prob(obs state set = " << obsStSet << "  " << stateCodeToString(obsStSet) << " , " << statelist[common] << " ) = " << p << std::endl;
                 }
             }
             common = getNextCommStSet(obsStSet, common);
@@ -1590,10 +1618,11 @@ int main(int argc, char * argv[]) {
                         classifyObservedDataIntoClasses(nclTree, bitFieldMatrix, pwPtr, std::cout, &observed, blob);
                     }
 */
-                }
-                else {
-                    std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";
-                }
+                    }
+                    else {
+                        std::cerr << "Tree " << (1 + treeInd) << " of TREES block " << (1 + treesBlockInd) << " does not lengths for all of the edges. Skipping this tree.\n";
+                    }
+
             }
         }
         nexusReader.DeleteBlocksFromFactories();
