@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import sys
 def write_column(char_list, stream_list):
     for i,c in enumerate(char_list):
         stream_list[i].write(c)
@@ -15,7 +15,7 @@ def add_next(col_list,levels,stream_list):
             write_column(c,stream_list)
 from cStringIO import StringIO
 stream_list=[]
-ns = 6
+ns = int(sys.argv[1])
 for i in range(ns):
     stream_list.append(StringIO())
 
