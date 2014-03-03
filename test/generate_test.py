@@ -148,7 +148,7 @@ if len(rates) > 1:
     assert(len(rates) == len(rate_probs))
     opts = opts + ' -m%s -p%s' %(','.join([str(i) for i in rates]), ','.join([str(i) for i in rate_probs[:-1]]))
     
-
+sys.exit(0)
 invoc = '%s %s %s >%s 2>%s' % (os.path.join(d, 'src', 'PhyPatClassProb'), opts, fn, stdo, stde)
 sys.stderr.write('Creating/Overwriting %s and %s by running:\n   %s\n' % (stdo, stde, invoc))
 rc = os.system(invoc)

@@ -15,7 +15,17 @@ def add_next(col_list,levels,stream_list):
             write_column(c,stream_list)
 from cStringIO import StringIO
 stream_list=[]
-ns = int(sys.argv[1])
+
+shape = 'p'
+if len(sys.argv) > 2:
+    shape = sys.argv[2].lower()
+    if shape not in 'bp':
+        sys.exit('Shape must be "b" or "p"\n')
+if shape == 'b':
+    ex = int(sys.argv[1])
+    ns = 2**ex
+else:
+    ns = int(sys.argv[1])
 for i in range(ns):
     stream_list.append(StringIO())
 
@@ -27,17 +37,37 @@ begin data;
 dimensions ntax = '''+str(ns)+''' nchar = '''+str(length)+''';
     format datatype = dna;
     matrix'''
+
 for i in range(ns):
     print 's'+str(i+1), stream_list[i].getvalue()
 treestr = ''
-for i in range(ns): 
-    if i<ns-1:
-        treestr += '('
-    treestr += 's' + str(i+1) + ':0.02'
-    if i < ns-1:
-        treestr += ','
-treestr += '):0.02'*(ns-2)
-treestr += ')'
+def build_balanced(exponent, start, blen):
+    if exponent==1:
+        return ('(s{x}:{blen},s{i}:{blen}): {blen}'.format(x=start, blen=blen, i=start+1), start+2)
+    else:
+        left_str, startn = build_balanced(exponent-1, start, blen)
+        right_str, startn = build_balanced(exponent-1, startn, blen)
+        n='('+left_str+','+right_str+'): '+blen
+        return n, startn
+if shape == 'p':
+    for i in range(ns): 
+        if i<ns-1:
+            treestr += '('
+        treestr += 's' + str(i+1) + ':0.02'
+        if i < ns-1:
+            treestr += ','
+    treestr += '):0.02'*(ns-2)
+    treestr += ')'
+else:
+    shape = 'b'
+    if len(sys.argv) > 2:
+        shape = sys.argv[2].lower()
+        if shape not in 'bp':
+            sys.exit('Shape must be "b" or "p"\n')
+    if shape == 'b':
+        treestr = build_balanced(ex, 1, '0.02') 
+        treestr = treestr[0]
+
 print ''';
 end;
 begin paup;
