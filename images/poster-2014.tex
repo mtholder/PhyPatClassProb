@@ -204,7 +204,7 @@ We have developed a dynamic programming algorithm that can calculate the probabi
 \end{compactitem}
 yielding an approximate memory requirement of $\mathcal{O}(N^2 k 2^{2k}$).
 $k$ is bounded and often small ($k=4$ for DNA data).
-With respect to tree size, calculations scale $\mathcal{O}(N^3)$ (see Figure \ref{Log2RunTimeGraph})
+With respect to tree size, calculations scale $\mathcal{O}(N^3)$ (see Figure \ref{Log2RunTimeGraph}).
 Waddell {\em et al.~}\citep{WaddellOP2009} used simulation on a tree of mammals to obtain probabilities for classes of patterns.
 We validated our algorithm with the same data and confirmed very similar probability calculations (Figure \ref{ComparisonToWaddell}).  
 These results were presented in our recently published article in the PloS Currents Tree of Life online journal\cite{KochH2012}.
@@ -225,12 +225,11 @@ So, many datasets describing organisms' morphological traits only contain parsim
 Correcting for this data filtering to only include parsimony informative patterns
 is crucial to reliable tree inference \cite{NylanderRHN2004,AllmanHR2010}.
 To correct the calculations, one must be able to calculate the probability of 
-generating a parsimony uninformative pattern.
+generating a parsimony uninformative pattern.  We are in the last stages of developing a specialization of the algorithm for calculating the class of parsimony uninformative patterns.
 
-We are in the last stages of developing a specialization of the algorithm for calculating the class of parsimony uninformative patterns.
-By definition, a parsimony informative pattern will a length of $k-1$, thus we do not need to keep probabilities
+By definition, a parsimony informative pattern will have a length of $k-1$, so we do not need to keep probabilities
 for an array of tree lengths.
-We can also ignore the $\mathcal{O}(2^{k}$) downpass states, in order to record which of the $k$ states is repeated in the tree (there can only be one). 
+We can also ignore the $\mathcal{O}(2^{k}$) downpass states in order to record which of the $k$ states is repeated in the tree (there can only be one). 
 \vskip 1.84em
 Thus the specialization should have memory requirements that scale as $\mathcal{O}(N k^2 2^{k}$).
 The need to consider multiple parsimony lengths as well as consider all possible ways of partitioning this length between the left and right subtrees are responsible for $\mathcal{O}(N^2)$ of the running time of the general algorithm.
@@ -265,6 +264,7 @@ Thus, we expect the specialized form to run in an amount of time that is linear 
 	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 \end{wrapfigure}
 (2) After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package- a widely-used software tool for inferring trees.  
+
 (3) We will add calculation of goodness-of-fit statistics for model testing. 
 
 }
@@ -272,7 +272,7 @@ Thus, we expect the specialized form to run in an amount of time that is linear 
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
 \smaller						% Make the whole text smaller
 \vspace{-.2em}			% Save some space at the beginning
-We would like to thank NIH 5 R25GM62232 and the Initiative for Maximizing Student Diversity for funding.
+We would like to thank NIH 5 R25GM62232 and the Initiative for Maximizing Student Diversity Program for funding.
 
 %\begin{wrapfigure}{r}{15em}
 %	\vskip -1.5em
