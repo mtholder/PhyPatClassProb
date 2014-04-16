@@ -117,14 +117,14 @@ We recently published an algorithm that includes a general approach applicable t
 \headerbox{Research Goals}{name=research goals,column=0,below=intro}{
 \begin{compactenum}
 \item Develop specialized algorithms for calculating the probability of a parsimony-uninformative character.
- \vskip .4em
+ \vskip .42em
 \item Implement the algorithms into testing software in C++ and Python
- \vskip .4em
+ \vskip .42em
 \item Compare our algorithms' results to PAUP to ensure accuracy
- \vskip .4 em
+ \vskip .42 em
 \item Add the algorithms to GARLI for use in phylogenetic inference
 (Recognizing these symmetric cases will optimize our code's efficiency and accuracy).
- \vskip 0.4em
+ \vskip 0.42em
 \end{compactenum}
 }i
 
@@ -234,9 +234,7 @@ Thus the specialization should have memory requirements that scale as $\mathcal{
 The need to consider multiple parsimony lengths as well as consider all possible ways of partitioning this length between the left and right subtrees are responsible for $\mathcal{O}(N^2)$ of the running time of the general algorithm.
 Thus, we expect the specialized form to run in an amount of time that is linear with the number of leaves in the tree.
 
-We are conducting this work according to the principles of open notebook science; all software, notes, and results are
-publicly viewable on:      
-{https://github.com/mtholder/PhyPatClassProb}
+(All of our notes and data are publicly viewable online at: {https://github.com/mtholder/PhyPatClassProb})
 
 %In these models, many calculations return the same answer. (Knowing that distinct combinations give the same result allows the answer to be calculated with fewer operations). 
 %We can sketch out a rough computational complexity for a symmetric version of the algorithm.
@@ -261,7 +259,7 @@ publicly viewable on:
 \begin{wrapfigure}{r}{12em}
 	\vskip -.5em
 		\includegraphics[width=12em]{downpass-symmetry-small}
-	\vskip -.5em
+	\vskip -1em
 	\caption{Combinations of state-sets for left and right child which lead to downpass state set of $\{0\}$ when $k=3$. In the fully symmetric case, edges shown with the same color are guaranteed to have the same probability. There are 9 edges, but only 6 colors.}\label{symmetryFig}
 \end{wrapfigure}
 (2) After validating the testing implementation, we will include our approaches in the GARLI \citep{GARLI} software package- a widely-used software tool for inferring trees.  
@@ -271,7 +269,7 @@ publicly viewable on:
 
 \headerbox{Acknowledgements}{name=acknowledgements,column=3,below=results3}{
 \smaller						% Make the whole text smaller
-\vspace{-0.4em}			% Save some space at the beginning
+\vspace{-.2em}			% Save some space at the beginning
 We would like to thank NIH 5 R25GM62232 and the Initiative for Maximizing Student Diversity for funding.
 
 %\begin{wrapfigure}{r}{15em}
@@ -284,9 +282,9 @@ We would like to thank NIH 5 R25GM62232 and the Initiative for Maximizing Studen
 
 \headerbox{References}{name=references,column=3,below=acknowledgements}{
 \smaller													% Make the whole text smaller
-\vspace{-0.4em} 										% Save some space at the beginning
+\vspace{-0.1em} 										% Save some space at the beginning
 \bibliographystyle{plain}							% Use plain style
-\renewcommand{\section}[2]{\vskip 0.05em}		% Omit "References" title
+\renewcommand{\section}[2]{\vskip -.3em}		% Omit "References" title
 \bibliography{../pattern_class}
 }
 
